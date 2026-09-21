@@ -86,25 +86,27 @@ pathname, so a database that has been used both ways still deletes photos correc
 ## Deploying to Vercel
 
 Import the repository, then under Storage create a Neon Postgres database and a
-Blob store. Both set their environment variable on the project automatically:
-`DATABASE_URL` for the database and `BLOB_READ_WRITE_TOKEN` for the blob store.
-Redeploy once so the build picks them up.
+Blob store, and connect both to the project. That is the whole setup: Neon
+provides `DATABASE_URL`, and the Blob store provides `BLOB_STORE_ID`, which the
+blob SDK uses together with the `VERCEL_OIDC_TOKEN` that Vercel issues. No
+read/write token is needed when running on Vercel.
 
-Migrations are not part of the build, because a build runs for preview
-deployments too. Run them from a checkout instead, against the pooled connection
-string that Neon gives you:
+Production deployments run their migrations as part of the build, through
+`scripts/migrate.mjs`. Preview deployments skip them, because they share the
+production database and a branch should not apply its schema before it merges.
+Local builds skip them too, so `pnpm build` does not need a reachable database.
+
+Vercel stores the database credentials as secrets, which cannot be read back,
+so `vercel env pull` writes `[SENSITIVE]` in place of `DATABASE_URL`. To run
+anything against production from a checkout, copy the pooled connection string
+out of the Neon dashboard and pass it inline:
 
 ```bash
-DATABASE_URL="postgresql://...-pooler.../neondb?sslmode=require" pnpm db:migrate
+DATABASE_URL="postgresql://...-pooler.../neondb?sslmode=require" pnpm db:seed
 ```
 
 An inline variable wins over `.env.local`, so this does not touch the local
-database. The same applies to seeding, which uploads the photos to blob storage
-when the token is present:
-
-```bash
-DATABASE_URL="..." BLOB_READ_WRITE_TOKEN="..." pnpm db:seed
-```
+database.
 
 Worth knowing:
 
@@ -119,8 +121,8 @@ Worth knowing:
   to, so the first request after an idle spell pays a cold start.
 - Put the function region in the same region as the database, or every query
   crosses the Atlantic twice.
-- Photos have to go to blob storage once deployed. The local disk fallback
-  raises a clear error rather than failing on a read-only filesystem.
+- Preview deployments currently point at the production database. Enable Neon
+  branching in the Vercel integration to give each preview its own copy.
 
 ## Recipe photos
 
