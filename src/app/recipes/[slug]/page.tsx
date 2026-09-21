@@ -1,19 +1,31 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
-import { ingredientAmount, instructionSteps } from "@/lib/format";
+import { ingredientAmount, instructionSteps, truncate } from "@/lib/format";
 import { findRecipeBySlug } from "@/lib/recipes";
 
 import { loadRecipeBySlug } from "./load";
 
 type PageProps = { params: Promise<{ slug: string }> };
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const recipe = await findRecipeBySlug(slug);
 
-  return { title: recipe?.title ?? "Recipe" };
+  if (!recipe) return { title: "Recipe" };
+
+  const description = recipe.description ? truncate(recipe.description, 200) : undefined;
+  const url = `/recipes/${recipe.slug}`;
+
+  return {
+    title: recipe.title,
+    description,
+    alternates: { canonical: url },
+    openGraph: { title: recipe.title, description, type: "article", url },
+    twitter: { card: "summary_large_image", title: recipe.title, description },
+  };
 }
 
 export default async function RecipePage({ params }: PageProps) {
