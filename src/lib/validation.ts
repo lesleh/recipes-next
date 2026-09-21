@@ -1,7 +1,14 @@
 import { z } from "zod";
 
 export const IMAGE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+// Vercel caps a function request body at 4.5MB and will not raise it, so the
+// limit the form advertises has to sit below that rather than at the 10MB the
+// Rails version allowed.
+export const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+
+// Headroom for the rest of the multipart body, so an oversized photo reaches
+// our own validation and gets a readable message instead of a runtime error.
+export const MAX_ACTION_BODY_BYTES = MAX_IMAGE_BYTES + 512 * 1024;
 
 const blankToNull = (value: unknown) =>
   typeof value === "string" && value.trim() === "" ? null : value;

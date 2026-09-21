@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-import { MAX_IMAGE_BYTES } from "./src/lib/validation";
+import { MAX_ACTION_BODY_BYTES } from "./src/lib/validation";
 
 const nextConfig: NextConfig = {
   images: {
@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     // Photos are posted through a server action, and the default cap is 1MB.
-    serverActions: { bodySizeLimit: MAX_IMAGE_BYTES },
+    serverActions: { bodySizeLimit: MAX_ACTION_BODY_BYTES },
   },
 };
 
