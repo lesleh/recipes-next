@@ -8,23 +8,16 @@ This is a port of an earlier Rails application of the same name.
 
 ## Requirements
 
-- Node 24 (native TypeScript execution is used by the seed script)
+- Node 24
 - pnpm
-- A Neon Postgres database and a Vercel Blob store, both available on the Vercel Hobby plan
+- Docker, for the local Postgres database
 
 ## Getting started
 
-Create the Postgres database and the Blob store under Storage in the Vercel dashboard,
-then copy their credentials into `.env.local`:
-
 ```bash
 cp .env.example .env.local
-```
-
-Install, create the schema, and load the sample recipes:
-
-```bash
 pnpm install
+docker compose up -d
 pnpm db:migrate
 pnpm db:seed
 pnpm dev
@@ -32,8 +25,11 @@ pnpm dev
 
 The application runs at <http://localhost:3000> and starts on the recipe list.
 Seeding is optional and adds three sample recipes. It matches on title, so running
-it more than once will not create duplicates. Photos are uploaded only when
-`BLOB_READ_WRITE_TOKEN` is set, and only for recipes that do not already have one.
+it more than once will not create duplicates.
+
+Nothing above needs a Vercel account. The defaults in `.env.example` point at the
+Compose database, and with no blob token set, photos are written to
+`public/uploads` instead.
 
 ## Checks
 
@@ -54,8 +50,8 @@ Ingredients are edited inline on the recipe form, which holds the rows in React 
 and submits them as JSON. Because the form always posts the complete list, saving
 replaces a recipe's ingredient rows wholesale rather than diffing them.
 
-Each recipe can carry one photo, stored in Vercel Blob and rendered through
-`next/image`, which handles resizing.
+Each recipe can carry one photo, rendered through `next/image`, which handles
+resizing.
 
 ## Database
 
@@ -66,8 +62,22 @@ pnpm db:generate
 pnpm db:migrate
 ```
 
-Queries go through the Neon WebSocket driver rather than the HTTP one, because
-saving a recipe and its ingredients needs a real transaction.
+Queries go through the standard `pg` driver rather than a hosted-provider one, so
+the same code reaches the Compose database locally and a managed Postgres in
+production. TLS is decided by `sslmode` in the connection string.
+
+## Photo storage
+
+`src/lib/storage.ts` picks its backend from the environment. With
+`BLOB_READ_WRITE_TOKEN` set, photos go to Vercel Blob. Without it, they are written
+to `public/uploads`, which is not committed. The two are told apart by the stored
+pathname, so a database that has been used both ways still deletes photos correctly.
+
+## Deploying
+
+Set `DATABASE_URL` to the managed Postgres connection string and
+`BLOB_READ_WRITE_TOKEN` to a Vercel Blob token, then run `pnpm db:migrate` against
+the production database.
 
 ## Recipe photos
 
