@@ -195,7 +195,7 @@ The three photos in `seed/images` came from the Rails application this replaced.
 
 ## Site icons
 
-The icon is a bowl and spoon in the site's green and off-white, drawn by hand
+The icon is a bowl and spoon in the site's accent blue and pale ground, drawn by hand
 in `src/app/icon.svg`. The bowl sits on a 32 unit grid with its edges on even
 numbers, so every edge falls on a whole pixel at 16 by 16, where a favicon
 spends most of its life. The spoon blurs at that size, which is why the bowl
@@ -214,7 +214,7 @@ rsvg-convert -w 48 -h 48 src/app/icon.svg -o /tmp/f48.png
 magick /tmp/f16.png /tmp/f32.png /tmp/f48.png src/app/favicon.ico
 
 rsvg-convert -w 130 -h 130 src/app/icon.svg -o /tmp/mark.png
-magick -size 180x180 xc:'#2f6f4e' /tmp/mark.png -gravity center -composite \
+magick -size 180x180 xc:'#16408c' /tmp/mark.png -gravity center -composite \
   -alpha remove -alpha off -depth 8 -strip src/app/apple-icon.png
 ```
 
@@ -222,5 +222,5 @@ Both commands need Homebrew's `librsvg` and `imagemagick`.
 
 The Apple icon is a full square with no transparency and no rounded corners,
 because iOS rounds and masks the corners itself. Compositing the 130 pixel
-render onto a 180 pixel green square gives the mark the inset iOS expects, and
-hides the rounded corners of the tile against the same green.
+render onto a 180 pixel blue square gives the mark the inset iOS expects, and
+hides the rounded corners of the tile against the same blue.
