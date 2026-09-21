@@ -143,13 +143,51 @@ production. TLS is decided by `sslmode` in the connection string.
 to `public/uploads`, which is not committed. The two are told apart by the stored
 pathname, so a database that has been used both ways still deletes photos correctly.
 
+## Write access
+
+Reading is open to everyone. The recipe list, search, a recipe page and the
+photos need no password. Adding, changing and deleting a recipe need one.
+
+The password is `RECIPES_WRITE_PASSWORD`, read from the environment. It is asked
+for through HTTP basic auth, so the browser shows its own prompt. Any username
+works, because there is one shared password rather than accounts. Basic auth
+sends the password on every request, so the site has to be served over HTTPS,
+which Vercel does.
+
+The password is checked in two places:
+
+- `src/proxy.ts`, for `/recipes/new` and `/recipes/<slug>/edit`, which returns
+  the 401 that makes the browser prompt
+- `saveRecipe` and `deleteRecipe` in `src/app/recipes/actions.ts`
+
+Both are needed. A server function is a POST to the page that holds it, and the
+delete button sits on the public recipe page, so no path matcher can cover it.
+
+With no password set, the write pages refuse in every environment, and a
+production build fails rather than shipping a site anyone can edit. A local
+build and a preview build do not need the variable.
+
+New recipe, Edit and Delete stay visible to everyone, and a visitor who clicks
+one gets the prompt. Hiding them would mean reading the `Authorization` header
+on the public pages, which would stop those pages being cached, and browsers do
+not reliably send the header outside the protected paths, so the controls would
+come and go.
+
+There is no sign-out. Basic auth has none, and this is a choice rather than an
+oversight: one author on their own devices is the case being built for, and the
+browser drops the password when it closes. On a shared computer the write pages
+stay open until then.
+
 ## Deploying to Vercel
 
 Import the repository, then under Storage create a Neon Postgres database and a
-Blob store, and connect both to the project. That is the whole setup: Neon
-provides `DATABASE_URL`, and the Blob store provides `BLOB_STORE_ID`, which the
-blob SDK uses together with the `VERCEL_OIDC_TOKEN` that Vercel issues. No
-read/write token is needed when running on Vercel.
+Blob store, and connect both to the project. Neon provides `DATABASE_URL`, and
+the Blob store provides `BLOB_STORE_ID`, which the blob SDK uses together with
+the `VERCEL_OIDC_TOKEN` that Vercel issues. No read/write token is needed when
+running on Vercel.
+
+Add `RECIPES_WRITE_PASSWORD` yourself, under Settings > Environment Variables. A
+production build fails without it. That is the whole setup.
 
 Production deployments run their migrations as part of the build, through
 `scripts/migrate.mjs`. Preview deployments skip them, because they share the

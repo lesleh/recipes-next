@@ -2,13 +2,29 @@
 
 import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes } from "@/db/schema";
+import { checkWriteAccess, WRITE_PASSWORD_MISSING } from "@/lib/auth";
 import { RESERVED_SLUGS, slugify } from "@/lib/slug";
 import { removeImage, storeImage, type StoredImage } from "@/lib/storage";
 import { recipeSchema, validateImage } from "@/lib/validation";
+
+/**
+ * The proxy covers the two form pages, but a server function is a POST to the
+ * page that holds it, so the delete action arrives on the public recipe page.
+ * Every action checks for itself rather than trusting the matcher.
+ */
+async function requireWriteAccess() {
+  const access = checkWriteAccess((await headers()).get("authorization"));
+
+  if (access === "unconfigured") throw new Error(WRITE_PASSWORD_MISSING);
+  // Nothing prompts here. Refusing before anything is read or written is all
+  // this has to do.
+  if (access === "denied") throw new Error("A password is needed to change a recipe.");
+}
 
 /** The field an error belongs to, so the form can point at it. */
 export type RecipeFormError = { field: string | null; message: string };
@@ -78,6 +94,8 @@ export async function saveRecipe(
   _previousState: RecipeFormState,
   formData: FormData,
 ): Promise<RecipeFormState> {
+  await requireWriteAccess();
+
   const idValue = text(formData, "id");
   const id = idValue ? Number(idValue) : null;
 
@@ -194,6 +212,8 @@ export async function saveRecipe(
 }
 
 export async function deleteRecipe(formData: FormData) {
+  await requireWriteAccess();
+
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id)) redirect("/");
 
