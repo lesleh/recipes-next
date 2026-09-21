@@ -1,9 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useState } from "react";
+import Link from "next/link";
+import { useActionState, useEffect, useRef, useState } from "react";
 
-import { saveRecipe, type RecipeFormState } from "@/app/recipes/actions";
+import {
+  saveRecipe,
+  type RecipeFormError,
+  type RecipeFormState,
+} from "@/app/recipes/actions";
 import type { RecipeWithIngredients } from "@/db/schema";
 import { IMAGE_CONTENT_TYPES } from "@/lib/validation";
 
@@ -27,7 +32,30 @@ function initialRows(recipe?: RecipeWithIngredients): IngredientRow[] {
   }));
 }
 
-export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
+function messagesFor(errors: RecipeFormError[], field: string) {
+  return errors.filter((error) => error.field === field).map((error) => error.message);
+}
+
+function FieldError({ errors, field }: { errors: RecipeFormError[]; field: string }) {
+  const messages = messagesFor(errors, field);
+  if (messages.length === 0) return null;
+
+  return (
+    <p className="field__error" id={`${field}-error`}>
+      {messages.join(". ")}
+    </p>
+  );
+}
+
+export function RecipeForm({
+  recipe,
+  backHref,
+  backLabel,
+}: {
+  recipe?: RecipeWithIngredients;
+  backHref: string;
+  backLabel: string;
+}) {
   const [state, formAction, pending] = useActionState<RecipeFormState, FormData>(saveRecipe, {
     errors: [],
   });
@@ -44,6 +72,12 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
   });
   const [rows, setRows] = useState(() => initialRows(recipe));
 
+  // A refused save scrolls the reader back to the list of what went wrong.
+  const summary = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (state.errors.length > 0) summary.current?.focus();
+  }, [state]);
+
   const setValue = (field: keyof typeof values) => (value: string) =>
     setValues((current) => ({ ...current, [field]: value }));
 
@@ -58,27 +92,44 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
       return remaining.length > 0 ? remaining : [blankRow()];
     });
 
+  /** Marks a field as wrong and points its description at the message below. */
+  const invalid = (field: string) =>
+    messagesFor(state.errors, field).length > 0
+      ? { "aria-invalid": true as const, "aria-describedby": `${field}-error` }
+      : {};
+
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form action={formAction} className="flex flex-col gap-6">
       {recipe && <input type="hidden" name="id" value={recipe.id} />}
       <input
         type="hidden"
         name="ingredients"
-        value={JSON.stringify(
-          rows.map(({ quantity, unit, name }) => ({ quantity, unit, name })),
-        )}
+        value={JSON.stringify(rows.map(({ quantity, unit, name }) => ({ quantity, unit, name })))}
       />
 
       {state.errors.length > 0 && (
-        <div className="border-danger/40 bg-danger/5 text-danger rounded-lg border p-4">
-          <h2 className="mt-0 text-base">
+        <div
+          ref={summary}
+          tabIndex={-1}
+          role="alert"
+          className="border-danger bg-danger-soft rounded-surface border-l-4 px-5 py-4"
+        >
+          <h2 className="text-danger">
             {state.errors.length === 1
-              ? "1 error stopped this recipe being saved:"
-              : `${state.errors.length} errors stopped this recipe being saved:`}
+              ? "1 error stopped this recipe being saved"
+              : `${state.errors.length} errors stopped this recipe being saved`}
           </h2>
-          <ul className="list-disc pl-5">
+          <ul className="mt-2 list-disc pl-5">
             {state.errors.map((error) => (
-              <li key={error}>{error}</li>
+              <li key={`${error.field}-${error.message}`} className="text-danger">
+                {error.field ? (
+                  <a href={`#${error.field}`} className="text-danger">
+                    {error.message}
+                  </a>
+                ) : (
+                  error.message
+                )}
+              </li>
             ))}
           </ul>
         </div>
@@ -92,7 +143,9 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
           required
           value={values.title}
           onChange={(event) => setValue("title")(event.target.value)}
+          {...invalid("title")}
         />
+        <FieldError errors={state.errors} field="title" />
       </div>
 
       <div className="field">
@@ -103,7 +156,9 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
           rows={3}
           value={values.description}
           onChange={(event) => setValue("description")(event.target.value)}
+          {...invalid("description")}
         />
+        <FieldError errors={state.errors} field="description" />
       </div>
 
       <div className="field">
@@ -113,27 +168,31 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
           type="file"
           name="image"
           accept={IMAGE_CONTENT_TYPES.join(",")}
-          className="file:button file:mr-3"
+          className="file:border-line-strong file:rounded-control file:text-ink file:bg-paper file:mr-3 file:cursor-pointer file:border file:px-4 file:py-2 file:text-base file:font-bold"
+          {...invalid("image")}
         />
+        <p className="field__hint">JPEG, PNG or WebP, up to 4MB.</p>
+        <FieldError errors={state.errors} field="image" />
 
         {recipe?.imageUrl && (
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex items-center gap-4">
             <Image
               src={recipe.imageUrl}
               alt=""
-              width={64}
-              height={64}
-              className="h-16 w-16 rounded-lg object-cover"
+              width={192}
+              height={144}
+              sizes="96px"
+              className="rounded-surface h-18 w-24 shrink-0 object-cover"
             />
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="removeImage" className="w-auto" />
+            <label className="flex min-h-11 items-center gap-3 text-base">
+              <input type="checkbox" name="removeImage" />
               Remove the current photo
             </label>
           </div>
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-3">
         <div className="field">
           <label htmlFor="servings">Servings</label>
           <input
@@ -141,9 +200,12 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
             name="servings"
             type="number"
             min={1}
+            inputMode="numeric"
             value={values.servings}
             onChange={(event) => setValue("servings")(event.target.value)}
+            {...invalid("servings")}
           />
+          <FieldError errors={state.errors} field="servings" />
         </div>
 
         <div className="field">
@@ -153,9 +215,12 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
             name="prepTimeMinutes"
             type="number"
             min={1}
+            inputMode="numeric"
             value={values.prepTimeMinutes}
             onChange={(event) => setValue("prepTimeMinutes")(event.target.value)}
+            {...invalid("prepTimeMinutes")}
           />
+          <FieldError errors={state.errors} field="prepTimeMinutes" />
         </div>
 
         <div className="field">
@@ -165,42 +230,48 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
             name="cookTimeMinutes"
             type="number"
             min={1}
+            inputMode="numeric"
             value={values.cookTimeMinutes}
             onChange={(event) => setValue("cookTimeMinutes")(event.target.value)}
+            {...invalid("cookTimeMinutes")}
           />
+          <FieldError errors={state.errors} field="cookTimeMinutes" />
         </div>
       </div>
 
-      <fieldset className="border-line rounded-xl border p-4">
-        <legend className="text-ink-soft px-1 text-sm font-medium">Ingredients</legend>
+      <fieldset id="ingredients" tabIndex={-1} className="panel" {...invalid("ingredients")}>
+        <legend className="field__legend">Ingredients</legend>
+        <FieldError errors={state.errors} field="ingredients" />
 
-        <div className="flex flex-col gap-2">
-          {rows.map((row) => (
-            <div key={row.key} className="flex flex-wrap items-center gap-2">
+        <div className="mt-2 flex flex-col gap-3">
+          {rows.map((row, index) => (
+            <div
+              key={row.key}
+              className="border-line grid grid-cols-2 gap-2 border-b pb-3 last:border-b-0 last:pb-0 sm:grid-cols-[6rem_6rem_minmax(0,1fr)_auto] sm:items-center"
+            >
               <input
-                aria-label="Quantity"
+                aria-label={`Quantity for ingredient ${index + 1}`}
                 placeholder="200"
-                className="w-20"
                 value={row.quantity}
                 onChange={(event) => updateRow(row.key, "quantity", event.target.value)}
               />
               <input
-                aria-label="Unit"
+                aria-label={`Unit for ingredient ${index + 1}`}
                 placeholder="g"
-                className="w-20"
                 value={row.unit}
                 onChange={(event) => updateRow(row.key, "unit", event.target.value)}
               />
               <input
-                aria-label="Ingredient"
+                aria-label={`Ingredient ${index + 1}`}
                 placeholder="Plain flour"
-                className="min-w-40 flex-1"
+                className="col-span-2 sm:col-span-1"
                 value={row.name}
                 onChange={(event) => updateRow(row.key, "name", event.target.value)}
               />
               <button
                 type="button"
-                className="button button--quiet"
+                className="button button--danger col-span-2 justify-self-start sm:col-span-1"
+                aria-label={`Remove ingredient ${index + 1}`}
                 onClick={() => removeRow(row.key)}
               >
                 Remove
@@ -211,7 +282,7 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
 
         <button
           type="button"
-          className="button button--quiet mt-3"
+          className="button mt-4"
           onClick={() => setRows((current) => [...current, blankRow()])}
         >
           Add ingredient
@@ -219,20 +290,26 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
       </fieldset>
 
       <div className="field">
-        <label htmlFor="instructions">Method (one step per line)</label>
+        <label htmlFor="instructions">Method</label>
+        <p className="field__hint">One step per line.</p>
         <textarea
           id="instructions"
           name="instructions"
-          rows={10}
+          rows={12}
           value={values.instructions}
           onChange={(event) => setValue("instructions")(event.target.value)}
+          {...invalid("instructions")}
         />
+        <FieldError errors={state.errors} field="instructions" />
       </div>
 
-      <div>
+      <div className="border-line flex flex-wrap items-center gap-2 border-t pt-5">
         <button type="submit" className="button button--primary" disabled={pending}>
           {pending ? "Saving..." : recipe ? "Update recipe" : "Create recipe"}
         </button>
+        <Link href={backHref} className="button button--quiet sm:ml-auto">
+          {backLabel}
+        </Link>
       </div>
     </form>
   );

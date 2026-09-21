@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { body, display } from "./fonts";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,11 +12,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB">
-      <body className="bg-paper text-ink min-h-dvh font-sans antialiased">
-        <header className="border-line bg-card border-b">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-3">
-            <Link href="/" className="text-ink text-lg font-bold no-underline">
+    <html lang="en-GB" className={`${body.variable} ${display.variable}`}>
+      <body className="bg-paper text-ink min-h-dvh antialiased">
+        <header className="border-line bg-card print-hide border-b">
+          <div className="page flex items-center justify-between gap-4 py-3">
+            <Link
+              href="/"
+              className="display text-ink inline-flex min-h-11 items-center text-xl font-bold tracking-tight no-underline"
+            >
               Recipes
             </Link>
             <Link href="/recipes/new" className="button button--primary">
@@ -23,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
 
-        <main className="mx-auto max-w-3xl px-5 pb-20">{children}</main>
+        {/* The width cap lives on each page, not here, so the home page can be
+            wider than a recipe. */}
+        <main className="pt-6 pb-20">{children}</main>
       </body>
     </html>
   );

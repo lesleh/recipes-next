@@ -86,6 +86,43 @@ slug from its own history.
 Deleting a recipe clears its rows in `recipe_slugs` through the same cascade that
 removes its ingredients, so every slug it held is free for another recipe again.
 
+## Design
+
+Every colour is a theme token in `src/app/globals.css`. No component writes a
+colour of its own, so a dark palette is a second set of values for those tokens
+rather than a second set of components.
+
+Type is two families, loaded through `next/font` and subset to Latin:
+
+- Archivo, one variable file with the width axis, set at 88% for the site name,
+  page titles, section headings, ingredient quantities and step numbers
+- Atkinson Hyperlegible, regular and bold, for everything you read
+
+Atkinson was drawn by the Braille Institute for readers with low vision, which
+is the same problem as reading a recipe from half a metre away. Both families
+have fallback metrics in Next, so the page does not shift as the files arrive.
+Three files load for Latin text. The build also emits Latin Extended files that
+Latin text never requests.
+
+There are two container widths, both tokens:
+
+- `--container-page`, 56rem, used by a recipe, the new form and the edit form
+- `--container-wide`, 76rem, defined for the two-column home page in #14
+
+`main` in `src/app/layout.tsx` no longer caps the width. Each page applies the
+`.page` class, and the home page will add `.page--wide` when the tag sidebar
+arrives.
+
+Ingredients are a table with a fixed quantity column and a rule under each row.
+The method is a list with the step number hanging in the left margin. The two
+are set differently on purpose, so a cook can tell them apart and keep their
+place. On a screen wider than 1024px the ingredients stay beside the method as
+it scrolls.
+
+A recipe page has a `@media print` block. Printing drops the site header, the
+buttons and the photo, and sets the rest for paper. It prints whatever is on
+screen, so a scaled ingredient list prints scaled.
+
 ## Database
 
 The schema lives in `src/db/schema.ts` and migrations are generated from it:
@@ -158,7 +195,7 @@ The three photos in `seed/images` came from the Rails application this replaced.
 
 ## Site icons
 
-The icon is a bowl and spoon in the site's green and off-white, drawn by hand
+The icon is a bowl and spoon in the site's accent blue and pale ground, drawn by hand
 in `src/app/icon.svg`. The bowl sits on a 32 unit grid with its edges on even
 numbers, so every edge falls on a whole pixel at 16 by 16, where a favicon
 spends most of its life. The spoon blurs at that size, which is why the bowl
@@ -177,7 +214,7 @@ rsvg-convert -w 48 -h 48 src/app/icon.svg -o /tmp/f48.png
 magick /tmp/f16.png /tmp/f32.png /tmp/f48.png src/app/favicon.ico
 
 rsvg-convert -w 130 -h 130 src/app/icon.svg -o /tmp/mark.png
-magick -size 180x180 xc:'#2f6f4e' /tmp/mark.png -gravity center -composite \
+magick -size 180x180 xc:'#16408c' /tmp/mark.png -gravity center -composite \
   -alpha remove -alpha off -depth 8 -strip src/app/apple-icon.png
 ```
 
@@ -185,5 +222,5 @@ Both commands need Homebrew's `librsvg` and `imagemagick`.
 
 The Apple icon is a full square with no transparency and no rounded corners,
 because iOS rounds and masks the corners itself. Compositing the 130 pixel
-render onto a 180 pixel green square gives the mark the inset iOS expects, and
-hides the rounded corners of the tile against the same green.
+render onto a 180 pixel blue square gives the mark the inset iOS expects, and
+hides the rounded corners of the tile against the same blue.

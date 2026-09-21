@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { RecipeForm } from "@/components/recipe-form";
 import { findRecipeBySlug } from "@/lib/recipes";
 
@@ -19,12 +17,15 @@ export default async function EditRecipePage({ params }: PageProps) {
   const recipe = await loadRecipeBySlug(slug, "/edit");
 
   return (
-    <>
+    <div className="page">
       <h1>Edit recipe</h1>
-      <RecipeForm recipe={recipe} />
-      <Link href={`/recipes/${recipe.slug}`} className="button button--quiet mt-6">
-        Back to recipe
-      </Link>
-    </>
+      <div className="mt-6">
+        <RecipeForm
+          recipe={recipe}
+          backHref={`/recipes/${recipe.slug}`}
+          backLabel="Back to recipe"
+        />
+      </div>
+    </div>
   );
 }
