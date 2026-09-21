@@ -67,18 +67,6 @@ export default async function Image({ params }: PageProps) {
           <div
             style={{
               display: "flex",
-              width: 80,
-              height: 8,
-              borderRadius: 4,
-              background: "#16408c",
-              boxShadow: photo ? "0 2px 10px rgba(0, 0, 0, 0.5)" : "none",
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              marginTop: 28,
               fontSize: 72,
               fontFamily: "Archivo",
               fontWeight: 700,
