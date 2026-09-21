@@ -30,17 +30,9 @@ export default async function Image({ params }: PageProps) {
   const title = recipe?.title ?? "Recipe";
   const description = recipe?.description ? truncate(recipe.description, 140) : null;
 
-  const facts = recipe
-    ? ([
-        recipe.prepTimeMinutes !== null ? `Prep ${recipe.prepTimeMinutes} min` : null,
-        recipe.cookTimeMinutes !== null ? `Cook ${recipe.cookTimeMinutes} min` : null,
-        recipe.servings !== null ? `Serves ${recipe.servings}` : null,
-      ].filter(Boolean) as string[])
-    : [];
-
   const [display, body, photo] = await Promise.all([
     loadDisplayFont(title),
-    loadBodyFont([description, ...facts].filter(Boolean).join(" ") || title),
+    loadBodyFont(description ?? title),
     recipe?.imageUrl ? loadPhoto(recipe.imageUrl).catch(() => null) : Promise.resolve(null),
   ]);
 
@@ -111,27 +103,6 @@ export default async function Image({ params }: PageProps) {
               }}
             >
               {description}
-            </div>
-          )}
-
-          {facts.length > 0 && (
-            <div style={{ display: "flex", gap: 32, marginTop: 28 }}>
-              {facts.map((fact) => (
-                <div
-                  key={fact}
-                  style={{
-                    display: "flex",
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: photo ? "#ffffff" : "#16222c",
-                    textShadow: photo
-                      ? "0 1px 3px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.5)"
-                      : "none",
-                  }}
-                >
-                  {fact}
-                </div>
-              ))}
             </div>
           )}
         </div>
