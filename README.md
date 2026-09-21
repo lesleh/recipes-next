@@ -83,11 +83,39 @@ production. TLS is decided by `sslmode` in the connection string.
 to `public/uploads`, which is not committed. The two are told apart by the stored
 pathname, so a database that has been used both ways still deletes photos correctly.
 
-## Deploying
+## Deploying to Vercel
 
-Set `DATABASE_URL` to the managed Postgres connection string and
-`BLOB_READ_WRITE_TOKEN` to a Vercel Blob token, then run `pnpm db:migrate` against
-the production database.
+Import the repository, then under Storage create a Neon Postgres database and a
+Blob store. Both set their environment variable on the project automatically:
+`DATABASE_URL` for the database and `BLOB_READ_WRITE_TOKEN` for the blob store.
+Redeploy once so the build picks them up.
+
+Migrations are not part of the build, because a build runs for preview
+deployments too. Run them from a checkout instead, against the pooled connection
+string that Neon gives you:
+
+```bash
+DATABASE_URL="postgresql://...-pooler.../neondb?sslmode=require" pnpm db:migrate
+```
+
+An inline variable wins over `.env.local`, so this does not touch the local
+database. The same applies to seeding, which uploads the photos to blob storage
+when the token is present:
+
+```bash
+DATABASE_URL="..." BLOB_READ_WRITE_TOKEN="..." pnpm db:seed
+```
+
+Worth knowing:
+
+- Use the pooled connection string rather than the direct one. The pool is
+  capped at a single connection per instance when running on Vercel.
+- Neon on the free plan scales to zero after five minutes and cannot be told not
+  to, so the first request after an idle spell pays a cold start.
+- Put the function region in the same region as the database, or every query
+  crosses the Atlantic twice.
+- Photos have to go to blob storage once deployed. The local disk fallback
+  raises a clear error rather than failing on a read-only filesystem.
 
 ## Recipe photos
 
