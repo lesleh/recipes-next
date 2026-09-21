@@ -86,6 +86,21 @@ const SEED_RECIPES: SeedRecipe[] = [
   },
 ];
 
+// Photos follow the database. Seeding a remote database from a checkout with
+// no blob token would write them to local disk and store paths that resolve
+// nowhere once deployed, so refuse rather than quietly corrupt the data.
+const LOCAL_DATABASE = /@(localhost|127\.0\.0\.1|postgres)[:/]/;
+
+if (
+  !LOCAL_DATABASE.test(process.env.DATABASE_URL ?? "") &&
+  !process.env.BLOB_READ_WRITE_TOKEN
+) {
+  throw new Error(
+    "Refusing to seed a remote database without BLOB_READ_WRITE_TOKEN: the photos " +
+      "would be written to local disk and their paths would not resolve when deployed.",
+  );
+}
+
 async function uploadImage(filename: string) {
   const body = await readFile(join(process.cwd(), "seed", "images", filename));
 
