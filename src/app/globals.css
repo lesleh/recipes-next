@@ -1,69 +1,405 @@
 @import "tailwindcss";
 
+/*
+ * Every colour on the site is a token here, so the dark palette in #13 is a
+ * second set of values rather than a second set of components.
+ */
 @theme {
-  --color-ink: #1f2421;
-  --color-ink-soft: #5d6b63;
-  --color-paper: #fbfaf7;
+  --color-paper: #edf1ee;
   --color-card: #ffffff;
-  --color-line: #e2e0d8;
-  --color-accent: #2f6f4e;
-  --color-danger: #a33a2c;
+  --color-ink: #16222c;
+  --color-ink-soft: #4e5c66;
+  --color-ink-faint: #65706a;
+  --color-line: #d2dad4;
+  --color-line-strong: #78837b;
+  --color-accent: #16408c;
+  --color-accent-soft: #e2e8f3;
+  --color-on-accent: #ffffff;
+  --color-danger: #8e2a1e;
+  --color-danger-soft: #f6e6e3;
 
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, sans-serif;
+  --font-sans: var(--font-body-face), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display-face), ui-sans-serif, system-ui, sans-serif;
+
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.65;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2rem;
+  --text-3xl--line-height: 1.1;
+  --text-4xl: 2.5rem;
+  --text-4xl--line-height: 1.05;
+
+  /* The recipe pages and the form. */
+  --container-page: 56rem;
+  /* The home page only, leaving room for the tag sidebar in #14. */
+  --container-wide: 76rem;
+
+  --radius-control: 0.5rem;
+  --radius-surface: 0.25rem;
 }
 
 @layer base {
-  a {
-    @apply text-accent underline underline-offset-2;
+  /* The width axis is what makes Archivo a display face here rather than
+     another grotesque. */
+  h1,
+  h2,
+  h3,
+  .display {
+    font-family: var(--font-display);
+    font-stretch: 88%;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
   }
 
   h1 {
-    @apply mt-6 mb-2 text-3xl font-semibold tracking-tight;
+    @apply text-3xl font-bold sm:text-4xl;
   }
 
   h2 {
-    @apply mt-6 mb-2 text-lg font-semibold;
+    @apply text-2xl font-semibold;
+  }
+
+  h3 {
+    @apply text-xl font-semibold;
+  }
+
+  a {
+    @apply text-accent underline underline-offset-3 decoration-1;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
   input,
+  select,
   textarea {
-    @apply w-full rounded-lg border border-line bg-card px-3 py-2 text-ink;
-    @apply focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none;
+    @apply border-line-strong bg-card text-ink w-full rounded-control border px-3 py-2;
+    @apply text-base;
+    min-height: 2.75rem;
+  }
+
+  textarea {
+    min-height: 6rem;
+    resize: vertical;
+  }
+
+  [aria-invalid="true"] {
+    @apply border-danger;
+    border-width: 2px;
+  }
+
+  /* Lighter than the filled-in value beside it, so an empty unit column does
+     not read as a unit. */
+  ::placeholder {
+    @apply text-ink-faint;
+    opacity: 1;
+  }
+
+  /* The label around it carries the 44px row, so the box itself can stay
+     the size of the text beside it. */
+  [type="checkbox"] {
+    @apply accent-accent shrink-0;
+    min-height: 0;
+    height: 1.5rem;
+    width: 1.5rem;
+  }
+
+  [type="file"] {
+    @apply border-none bg-transparent p-0;
   }
 }
 
 @layer components {
+  /* Two container widths, set in one place, applied by each page. */
+  .page {
+    @apply mx-auto w-full px-4 sm:px-6;
+    max-width: var(--container-page);
+  }
+
+  .page--wide {
+    max-width: var(--container-wide);
+  }
+
+  /* 2.75rem everywhere, so every control clears a 44px tap target. */
   .button {
-    @apply inline-flex cursor-pointer items-center justify-center rounded-lg border border-line
-      bg-card px-4 py-2 text-sm font-medium text-ink no-underline transition
-      hover:bg-paper disabled:cursor-not-allowed disabled:opacity-60;
+    @apply border-line-strong bg-card text-ink inline-flex cursor-pointer items-center
+      justify-center gap-2 rounded-control border px-4 text-base font-bold
+      no-underline transition-colors;
+    min-height: 2.75rem;
+  }
+
+  .button:hover {
+    @apply bg-paper;
+  }
+
+  .button:disabled {
+    @apply cursor-not-allowed opacity-60;
   }
 
   .button--primary {
-    @apply border-accent bg-accent text-white hover:bg-accent/90;
+    @apply border-accent bg-accent text-on-accent;
+  }
+
+  .button--primary:hover {
+    @apply bg-ink border-ink;
   }
 
   .button--quiet {
-    @apply border-transparent bg-transparent text-ink-soft hover:bg-line/40;
+    @apply text-accent border-transparent bg-transparent;
+  }
+
+  .button--quiet:hover {
+    @apply bg-accent-soft;
   }
 
   .button--danger {
-    @apply border-danger/40 text-danger hover:bg-danger/5;
+    @apply text-danger border-transparent bg-transparent;
+  }
+
+  .button--danger:hover {
+    @apply bg-danger-soft;
   }
 
   .field {
     @apply flex flex-col gap-1.5;
   }
 
-  .field label {
-    @apply text-sm font-medium text-ink-soft;
+  .field > label,
+  .field__legend {
+    @apply text-ink text-sm font-semibold;
+    font-family: var(--font-display);
+    font-stretch: 88%;
   }
 
+  .field__legend {
+    @apply px-1;
+  }
+
+  .field__hint {
+    @apply text-ink-soft text-xs;
+  }
+
+  .field__error {
+    @apply text-danger text-sm font-bold;
+  }
+
+  /* Times, servings and counts. Set apart from the prose, never as a heading. */
   .meta {
-    @apply flex flex-wrap gap-x-4 gap-y-1 text-sm text-ink-soft;
+    @apply text-ink-soft flex flex-wrap gap-x-5 gap-y-1 text-sm;
   }
 
+  .meta strong {
+    @apply text-ink font-semibold;
+    font-family: var(--font-display);
+    font-stretch: 88%;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .panel {
+    @apply border-line bg-card rounded-surface border p-5;
+  }
+
+  /*
+   * Runs to both screen edges on a phone, where the space is worth more than
+   * the margin. The wider crop on a desktop keeps the plate whole and still
+   * leaves the ingredients in view.
+   */
+  .recipe-photo {
+    @apply mt-6 object-cover;
+    /* Preflight caps an image at 100%, which would leave the bleed short. */
+    max-width: none;
+    width: calc(100% + 2rem);
+    margin-inline: -1rem;
+    aspect-ratio: 4 / 3;
+  }
+
+  @media (width >= 40rem) {
+    .recipe-photo {
+      @apply rounded-surface;
+      max-width: 100%;
+      width: 100%;
+      margin-inline: 0;
+      aspect-ratio: 16 / 9;
+    }
+  }
+
+  /*
+   * Ingredients are a table: a fixed quantity column and a rule under every
+   * row, so the eye tracks across from the amount to the thing.
+   */
+  .ingredients {
+    @apply border-line m-0 list-none border-t p-0;
+    /* Capped so a one-column page does not stretch "200 g" and "spaghetti"
+       to opposite edges. */
+    max-width: 32rem;
+  }
+
+  .ingredient {
+    @apply border-line grid gap-x-3 border-b py-2.5 text-lg;
+    grid-template-columns: 5rem minmax(0, 1fr);
+  }
+
+  @media (width >= 40rem) {
+    .ingredient {
+      grid-template-columns: 6rem minmax(0, 1fr);
+    }
+  }
+
+  .ingredient__quantity {
+    @apply text-ink font-semibold;
+    font-family: var(--font-display);
+    font-stretch: 88%;
+    font-variant-numeric: tabular-nums;
+    /* A unit written out in full, such as "tablespoons", has to break rather
+       than run into the name beside it. */
+    hyphens: auto;
+    overflow-wrap: anywhere;
+  }
+
+  .ingredient__name {
+    @apply text-ink;
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * The method is a sequence, so it gets numerals and space rather than rules.
+   * The hanging number is the one loud thing on the page.
+   */
+  .steps {
+    @apply m-0 flex list-none flex-col gap-5 p-0;
+  }
+
+  .step {
+    @apply grid gap-x-3;
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+
+  @media (width >= 40rem) {
+    .step {
+      grid-template-columns: 2.75rem minmax(0, 1fr);
+      column-gap: 1rem;
+    }
+  }
+
+  .step__number {
+    @apply text-accent text-2xl leading-tight font-bold sm:text-3xl;
+    font-family: var(--font-display);
+    font-stretch: 88%;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .step__text {
+    @apply text-ink text-lg;
+    max-width: 62ch;
+    overflow-wrap: anywhere;
+  }
+
+  /* A recipe with nothing in a section still has to look finished. */
   .empty {
-    @apply text-ink-soft italic;
+    @apply border-line text-ink-soft rounded-surface border border-dashed px-4 py-5 text-base;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/*
+ * Printing a recipe. The header, the buttons and the photo go; the title, the
+ * times, the ingredients and the method stay, set for paper. #2 scales the
+ * ingredients in the page, and printing takes what is on screen.
+ */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  html,
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .print-hide,
+  .recipe-photo {
+    display: none !important;
+  }
+
+  .page,
+  .page--wide {
+    max-width: none;
+    padding: 0;
+  }
+
+  .recipe-columns {
+    display: block;
+  }
+
+  /* The ingredients scroll in their own column on screen. On paper they have
+     to print in full. */
+  .recipe-columns > * {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .recipe-columns > * + * {
+    margin-top: 8mm;
+  }
+
+  .ingredients {
+    max-width: 110mm;
+  }
+
+  .ingredients,
+  .ingredient {
+    border-color: #999;
+  }
+
+  .ingredient,
+  .step__text {
+    font-size: 11pt;
+  }
+
+  .ingredient,
+  .step {
+    break-inside: avoid;
+  }
+
+  .step__number {
+    color: #000;
+    font-size: 13pt;
+  }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  h1 {
+    font-size: 20pt;
+  }
+
+  h2 {
+    font-size: 13pt;
+    break-after: avoid;
   }
 }

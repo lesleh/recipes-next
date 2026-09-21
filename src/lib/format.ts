@@ -1,8 +1,8 @@
 import type { Ingredient, Recipe } from "@/db/schema";
 
-/** Mirrors Ingredient#to_s: "200 g plain flour", skipping any blank part. */
-export function ingredientLabel(ingredient: Pick<Ingredient, "quantity" | "unit" | "name">) {
-  return [ingredient.quantity, ingredient.unit, ingredient.name]
+/** The amount alone: "200 g", or "" when neither part is filled in. */
+export function ingredientAmount(ingredient: Pick<Ingredient, "quantity" | "unit">) {
+  return [ingredient.quantity, ingredient.unit]
     .map((part) => part?.trim())
     .filter((part) => part)
     .join(" ");

@@ -8,36 +8,52 @@ export function RecipeCard({ recipe }: { recipe: RecipeListItem }) {
   const totalTime = totalTimeMinutes(recipe);
 
   return (
-    <li className="border-line bg-card flex gap-4 rounded-xl border p-4">
-      {recipe.imageUrl && (
-        <Link href={`/recipes/${recipe.slug}`} className="shrink-0">
+    <li className="border-line border-b">
+      {/* The whole row is the link, so the tap target is the row rather than
+          the title. A recipe with no photo keeps the same row. */}
+      <article className="relative flex gap-4 py-4 sm:gap-5 sm:py-5">
+        {recipe.imageUrl && (
           <Image
             src={recipe.imageUrl}
             alt=""
-            width={96}
-            height={96}
-            className="h-24 w-24 rounded-lg object-cover"
+            width={320}
+            height={240}
+            sizes="(min-width: 640px) 160px, 96px"
+            className="rounded-surface h-18 w-24 shrink-0 object-cover sm:h-30 sm:w-40"
           />
-        </Link>
-      )}
-
-      <div className="min-w-0 flex-1">
-        <h2 className="mt-0 mb-1 text-base font-semibold">
-          <Link href={`/recipes/${recipe.slug}`} className="text-ink no-underline hover:underline">
-            {recipe.title}
-          </Link>
-        </h2>
-
-        {recipe.description && (
-          <p className="text-ink-soft mb-2 text-sm">{truncate(recipe.description, 160)}</p>
         )}
 
-        <p className="meta">
-          {totalTime !== null && <span>{totalTime} min total</span>}
-          {recipe.servings !== null && <span>Serves {recipe.servings}</span>}
-          <span>{pluralize(recipe.ingredients.length, "ingredient")}</span>
-        </p>
-      </div>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-xl font-semibold">
+            <Link
+              href={`/recipes/${recipe.slug}`}
+              className="text-ink no-underline after:absolute after:inset-0 hover:underline"
+            >
+              {recipe.title}
+            </Link>
+          </h2>
+
+          {recipe.description && (
+            <p className="text-ink-soft mt-1 text-base">{truncate(recipe.description, 140)}</p>
+          )}
+
+          <p className="meta mt-2">
+            {totalTime !== null && (
+              <span>
+                <strong>{totalTime}</strong> min
+              </span>
+            )}
+            {recipe.servings !== null && (
+              <span>
+                Serves <strong>{recipe.servings}</strong>
+              </span>
+            )}
+            <span>{pluralize(recipe.ingredients.length, "ingredient")}</span>
+          </p>
+
+          {/* #14 adds the tag links below the meta row, where they wrap. */}
+        </div>
+      </article>
     </li>
   );
 }

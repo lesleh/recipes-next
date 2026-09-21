@@ -10,7 +10,26 @@ import { RESERVED_SLUGS, slugify } from "@/lib/slug";
 import { removeImage, storeImage, type StoredImage } from "@/lib/storage";
 import { recipeSchema, validateImage } from "@/lib/validation";
 
-export type RecipeFormState = { errors: string[] };
+/** The field an error belongs to, so the form can point at it. */
+export type RecipeFormError = { field: string | null; message: string };
+export type RecipeFormState = { errors: RecipeFormError[] };
+
+/** Field ids on the form. A row error points at the ingredients fieldset. */
+const FORM_FIELDS = new Set([
+  "title",
+  "description",
+  "servings",
+  "prepTimeMinutes",
+  "cookTimeMinutes",
+  "instructions",
+  "ingredients",
+  "image",
+]);
+
+function fieldFor(path: PropertyKey[]) {
+  const first = String(path[0] ?? "");
+  return FORM_FIELDS.has(first) ? first : null;
+}
 
 type ImageChange = StoredImage | { imageUrl: null; imagePathname: null };
 
@@ -82,9 +101,16 @@ export async function saveRecipe(
   const imageError = hasUpload ? validateImage(upload) : null;
 
   if (!parsed.success || imageError) {
-    const issues = parsed.success ? [] : parsed.error.issues.map((issue) => issue.message);
+    const issues: RecipeFormError[] = parsed.success
+      ? []
+      : parsed.error.issues.map((issue) => ({
+          field: fieldFor(issue.path),
+          message: issue.message,
+        }));
 
-    return { errors: [...issues, imageError].filter((message): message is string => Boolean(message)) };
+    if (imageError) issues.push({ field: "image", message: imageError });
+
+    return { errors: issues };
   }
 
   const recipe = parsed.data;
@@ -98,7 +124,7 @@ export async function saveRecipe(
   const slug = slugify(recipe.title);
   const slugError = await checkSlug(slug, existing?.id ?? null);
 
-  if (slugError) return { errors: [slugError] };
+  if (slugError) return { errors: [{ field: "title", message: slugError }] };
 
   // An upload beats the remove checkbox, so a stale tick cannot discard the
   // file the user just chose.

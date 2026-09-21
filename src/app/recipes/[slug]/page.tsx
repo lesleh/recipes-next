@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
-import { ingredientLabel, instructionSteps } from "@/lib/format";
+import { ingredientAmount, instructionSteps } from "@/lib/format";
 import { findRecipeBySlug } from "@/lib/recipes";
 
 import { loadRecipeBySlug } from "./load";
@@ -20,62 +20,93 @@ export default async function RecipePage({ params }: PageProps) {
   const { slug } = await params;
   const recipe = await loadRecipeBySlug(slug);
   const steps = instructionSteps(recipe.instructions);
+  const hasFacts =
+    recipe.prepTimeMinutes !== null ||
+    recipe.cookTimeMinutes !== null ||
+    recipe.servings !== null;
 
   return (
-    <article>
+    <article className="page">
       <h1>{recipe.title}</h1>
+
+      {recipe.description && (
+        <p className="text-ink-soft mt-3 max-w-[58ch] text-lg">{recipe.description}</p>
+      )}
+
+      {hasFacts && (
+        <p className="meta border-line mt-5 border-y py-3">
+          {recipe.prepTimeMinutes !== null && (
+            <span>
+              Prep <strong>{recipe.prepTimeMinutes}</strong> min
+            </span>
+          )}
+          {recipe.cookTimeMinutes !== null && (
+            <span>
+              Cook <strong>{recipe.cookTimeMinutes}</strong> min
+            </span>
+          )}
+          {recipe.servings !== null && (
+            <span>
+              Serves <strong>{recipe.servings}</strong>
+            </span>
+          )}
+        </p>
+      )}
 
       {recipe.imageUrl && (
         <Image
           src={recipe.imageUrl}
           alt={recipe.title}
-          width={1200}
-          height={800}
+          width={1600}
+          height={1067}
           priority
-          className="border-line mb-4 w-full rounded-xl border object-cover"
+          sizes="(min-width: 56rem) 56rem, 100vw"
+          className="recipe-photo"
         />
       )}
 
-      {recipe.description && <p className="text-ink-soft mb-3">{recipe.description}</p>}
+      <div className="recipe-columns mt-8 grid gap-x-10 gap-y-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <section className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:self-start lg:overflow-y-auto">
+          <h2>Ingredients</h2>
+          {recipe.ingredients.length > 0 ? (
+            <ul className="ingredients mt-3">
+              {recipe.ingredients.map((ingredient) => (
+                <li key={ingredient.id} className="ingredient">
+                  <span className="ingredient__quantity">{ingredientAmount(ingredient)}</span>
+                  <span className="ingredient__name">{ingredient.name}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="empty mt-3">No ingredients listed.</p>
+          )}
+        </section>
 
-      <p className="meta">
-        {recipe.prepTimeMinutes !== null && <span>Prep {recipe.prepTimeMinutes} min</span>}
-        {recipe.cookTimeMinutes !== null && <span>Cook {recipe.cookTimeMinutes} min</span>}
-        {recipe.servings !== null && <span>Serves {recipe.servings}</span>}
-      </p>
+        <section>
+          <h2>Method</h2>
+          {steps.length > 0 ? (
+            <ol className="steps mt-4">
+              {steps.map((step, index) => (
+                <li key={index} className="step">
+                  <span className="step__number" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <span className="step__text">{step}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="empty mt-3">No method written yet.</p>
+          )}
+        </section>
+      </div>
 
-      <section>
-        <h2>Ingredients</h2>
-        {recipe.ingredients.length > 0 ? (
-          <ul className="marker:text-ink-soft list-disc pl-5">
-            {recipe.ingredients.map((ingredient) => (
-              <li key={ingredient.id}>{ingredientLabel(ingredient)}</li>
-            ))}
-          </ul>
-        ) : (
-          <p className="empty">No ingredients listed.</p>
-        )}
-      </section>
-
-      <section>
-        <h2>Method</h2>
-        {steps.length > 0 ? (
-          <ol className="marker:text-ink-soft flex list-decimal flex-col gap-2 pl-5">
-            {steps.map((step, index) => (
-              <li key={index}>{step}</li>
-            ))}
-          </ol>
-        ) : (
-          <p className="empty">No method written yet.</p>
-        )}
-      </section>
-
-      <div className="mt-8 flex flex-wrap items-center gap-2">
+      <div className="border-line print-hide mt-10 flex flex-wrap items-center gap-2 border-t pt-5">
         <Link href={`/recipes/${recipe.slug}/edit`} className="button">
           Edit
         </Link>
         <DeleteRecipeButton id={recipe.id} title={recipe.title} />
-        <Link href="/" className="button button--quiet">
+        <Link href="/" className="button button--quiet sm:ml-auto">
           Back to recipes
         </Link>
       </div>
