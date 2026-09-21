@@ -11,3 +11,12 @@ export function siteUrl() {
 
   return host ? new URL(`https://${host}`) : new URL("http://localhost:3000");
 }
+
+/**
+ * A stored photo can be a multi-megabyte original, and a share card doesn't
+ * need it at full size. Routing it through Next's own image optimizer resizes
+ * and recompresses it, rather than pushing the original bytes to every crawler.
+ */
+export function ogImageUrl(imageUrl: string) {
+  return `/_next/image?url=${encodeURIComponent(imageUrl)}&w=1200&q=75`;
+}
