@@ -110,6 +110,11 @@ Worth knowing:
 
 - Use the pooled connection string rather than the direct one. The pool is
   capped at a single connection per instance when running on Vercel.
+- Connection strings arriving with `sslmode=prefer`, `require` or `verify-ca`
+  are rewritten to `verify-full`. Those three currently behave as
+  `verify-full` in pg, but are due to take the weaker libpq meaning in pg 9,
+  which would drop certificate and hostname checks. Neon certificates come from
+  Let's Encrypt, so no extra root certificate is needed.
 - Neon on the free plan scales to zero after five minutes and cannot be told not
   to, so the first request after an idle spell pays a cold start.
 - Put the function region in the same region as the database, or every query
