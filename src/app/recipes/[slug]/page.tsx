@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { ingredientAmount, instructionSteps, truncate } from "@/lib/format";
 import { findRecipeBySlug } from "@/lib/recipes";
-import { ogImageUrl, SITE_NAME } from "@/lib/site";
+import { SITE_NAME } from "@/lib/site";
 
 import { loadRecipeBySlug } from "./load";
 
@@ -24,14 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: recipe.title,
     description,
     alternates: { canonical: url },
-    openGraph: {
-      title: recipe.title,
-      description,
-      type: "article",
-      url,
-      siteName: SITE_NAME,
-      images: recipe.imageUrl ? [{ url: ogImageUrl(recipe.imageUrl), alt: recipe.title }] : undefined,
-    },
+    openGraph: { title: recipe.title, description, type: "article", url, siteName: SITE_NAME },
     twitter: { card: "summary_large_image", title: recipe.title, description },
   };
 }
