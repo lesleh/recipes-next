@@ -71,21 +71,16 @@ export default async function Image({ params }: PageProps) {
           />
         )}
 
-        {photo && (
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              background:
-                "linear-gradient(to top, rgba(22,34,44,0.92), rgba(22,34,44,0.25) 55%, rgba(22,34,44,0) 100%)",
-            }}
-          />
-        )}
-
         <div style={{ display: "flex", position: "relative", flexDirection: "column" }}>
           <div
-            style={{ display: "flex", width: 80, height: 8, borderRadius: 4, background: "#16408c" }}
+            style={{
+              display: "flex",
+              width: 80,
+              height: 8,
+              borderRadius: 4,
+              background: "#16408c",
+              boxShadow: photo ? "0 2px 10px rgba(0, 0, 0, 0.5)" : "none",
+            }}
           />
 
           <div
@@ -98,6 +93,7 @@ export default async function Image({ params }: PageProps) {
               lineHeight: 1.1,
               letterSpacing: "-0.02em",
               color: photo ? "#ffffff" : "#16222c",
+              textShadow: photo ? "0 2px 4px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.55)" : "none",
             }}
           >
             {title}
@@ -110,7 +106,8 @@ export default async function Image({ params }: PageProps) {
                 marginTop: 16,
                 fontSize: 30,
                 maxWidth: 980,
-                color: photo ? "#e2e8f3" : "#4e5c66",
+                color: photo ? "#ffffff" : "#4e5c66",
+                textShadow: photo ? "0 1px 3px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.5)" : "none",
               }}
             >
               {description}
@@ -127,6 +124,9 @@ export default async function Image({ params }: PageProps) {
                     fontSize: 28,
                     fontWeight: 700,
                     color: photo ? "#ffffff" : "#16222c",
+                    textShadow: photo
+                      ? "0 1px 3px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.5)"
+                      : "none",
                   }}
                 >
                   {fact}
