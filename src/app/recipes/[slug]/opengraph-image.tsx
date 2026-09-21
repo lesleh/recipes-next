@@ -64,10 +64,13 @@ export default async function Image({ params }: PageProps) {
           <div
             style={{
               position: "absolute",
-              inset: 0,
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
               display: "flex",
               background:
-                "linear-gradient(to top, rgba(10,14,18,0.92) 0%, rgba(10,14,18,0.75) 30%, rgba(10,14,18,0.35) 55%, rgba(10,14,18,0) 85%)",
+                "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.88) 40%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0) 92%)",
             }}
           />
         )}
@@ -82,6 +85,7 @@ export default async function Image({ params }: PageProps) {
             lineHeight: 1.1,
             letterSpacing: "-0.02em",
             color: photo ? "#ffffff" : "#16222c",
+            textShadow: photo ? "0 2px 6px rgba(0,0,0,0.9), 0 4px 20px rgba(0,0,0,0.8)" : "none",
           }}
         >
           {title}
