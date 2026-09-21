@@ -1,11 +1,12 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
-import { ingredients, recipes } from "@/db/schema";
+import { ingredients, recipeSlugs, recipes } from "@/db/schema";
+import { RESERVED_SLUGS, slugify } from "@/lib/slug";
 import { removeImage, storeImage, type StoredImage } from "@/lib/storage";
 import { recipeSchema, validateImage } from "@/lib/validation";
 
@@ -27,6 +28,31 @@ function parseIngredients(raw: FormDataEntryValue | null) {
 function text(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : "";
+}
+
+/**
+ * Why the title cannot be used as an address, or null when it can be. Titles
+ * are unique by their slug, so "Chocolate cake" and "Chocolate Cake!" clash.
+ */
+async function checkSlug(slug: string, recipeId: number | null) {
+  if (slug === "") {
+    return "Title must hold at least one letter or number, because the web address is built from it";
+  }
+
+  if (RESERVED_SLUGS.has(slug)) {
+    return `Title cannot be used, because "/recipes/${slug}" is already a page on this site`;
+  }
+
+  // Against recipe_slugs rather than recipes, so a slug a rename retired stays
+  // taken. A recipe can always take back a slug from its own history.
+  const taken = await db.query.recipeSlugs.findFirst({
+    where: and(
+      eq(recipeSlugs.slug, slug),
+      recipeId === null ? undefined : ne(recipeSlugs.recipeId, recipeId),
+    ),
+  });
+
+  return taken ? `Title is already used by another recipe, at "/recipes/${slug}"` : null;
 }
 
 export async function saveRecipe(
@@ -66,6 +92,14 @@ export async function saveRecipe(
 
   if (id && !existing) redirect("/");
 
+  // Checked before the photo is uploaded, so a refused save leaves no orphan
+  // file behind. The primary key on recipe_slugs is the backstop if two saves
+  // race each other.
+  const slug = slugify(recipe.title);
+  const slugError = await checkSlug(slug, existing?.id ?? null);
+
+  if (slugError) return { errors: [slugError] };
+
   // An upload beats the remove checkbox, so a stale tick cannot discard the
   // file the user just chose.
   const shouldRemove = text(formData, "removeImage") === "on" && !hasUpload;
@@ -77,9 +111,10 @@ export async function saveRecipe(
     image = { imageUrl: null, imagePathname: null };
   }
 
-  const savedId = await db.transaction(async (tx) => {
+  await db.transaction(async (tx) => {
     const values = {
       title: recipe.title,
+      slug,
       description: recipe.description,
       servings: recipe.servings,
       prepTimeMinutes: recipe.prepTimeMinutes,
@@ -102,6 +137,10 @@ export async function saveRecipe(
       recipeId = created.id;
     }
 
+    // A rename keeps the old slug here, which is what redirects the old
+    // address. Renaming back to an earlier title finds its row already there.
+    await tx.insert(recipeSlugs).values({ slug, recipeId }).onConflictDoNothing();
+
     if (recipe.ingredients.length > 0) {
       await tx.insert(ingredients).values(
         recipe.ingredients.map((ingredient, index) => ({
@@ -113,8 +152,6 @@ export async function saveRecipe(
         })),
       );
     }
-
-    return recipeId;
   });
 
   // Only once the row is safely saved, or a failed update would lose the photo.
@@ -123,8 +160,11 @@ export async function saveRecipe(
   }
 
   revalidatePath("/");
-  revalidatePath(`/recipes/${savedId}`);
-  redirect(`/recipes/${savedId}`);
+  revalidatePath(`/recipes/${slug}`);
+  // A rename leaves the old address redirecting, so its cached page has to go.
+  if (existing && existing.slug !== slug) revalidatePath(`/recipes/${existing.slug}`);
+
+  redirect(`/recipes/${slug}`);
 }
 
 export async function deleteRecipe(formData: FormData) {
@@ -134,6 +174,13 @@ export async function deleteRecipe(formData: FormData) {
   const existing = await db.query.recipes.findFirst({ where: eq(recipes.id, id) });
   if (!existing) redirect("/");
 
+  // Read before the delete, because the cascade clears them with the recipe.
+  // Every slug it held, current and retired, is free again afterwards.
+  const freed = await db
+    .select({ slug: recipeSlugs.slug })
+    .from(recipeSlugs)
+    .where(eq(recipeSlugs.recipeId, id));
+
   await db.delete(recipes).where(eq(recipes.id, id));
 
   if (existing.imagePathname) {
@@ -141,5 +188,10 @@ export async function deleteRecipe(formData: FormData) {
   }
 
   revalidatePath("/");
+
+  for (const { slug } of freed) {
+    revalidatePath(`/recipes/${slug}`);
+  }
+
   redirect("/");
 }

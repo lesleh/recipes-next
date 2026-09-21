@@ -4,7 +4,8 @@ import { join } from "node:path";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
-import { ingredients, recipes } from "@/db/schema";
+import { ingredients, recipeSlugs, recipes } from "@/db/schema";
+import { slugify } from "@/lib/slug";
 import { storeImage } from "@/lib/storage";
 
 type SeedIngredient = { quantity: string; unit: string; name: string };
@@ -114,6 +115,7 @@ for (const seed of SEED_RECIPES) {
 
   const values = {
     title: seed.title,
+    slug: slugify(seed.title),
     description: seed.description,
     servings: seed.servings,
     prepTimeMinutes: seed.prepTimeMinutes,
@@ -133,6 +135,11 @@ for (const seed of SEED_RECIPES) {
     const [created] = await tx.insert(recipes).values(values).returning({ id: recipes.id });
     return created.id;
   });
+
+  await db
+    .insert(recipeSlugs)
+    .values({ slug: values.slug, recipeId })
+    .onConflictDoNothing();
 
   await db.insert(ingredients).values(
     seed.ingredients.map((ingredient, index) => ({
