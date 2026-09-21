@@ -22,7 +22,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             >
               Recipes
             </Link>
-            <Link href="/recipes/new" className="button button--primary">
+            {/* Prefetch off: this route needs the write password, and a
+                background prefetch of it would trip the browser's Basic
+                Auth prompt on every public page that renders this link. */}
+            <Link href="/recipes/new" prefetch={false} className="button button--primary">
               New recipe
             </Link>
           </div>
