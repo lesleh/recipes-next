@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-import { put } from "@vercel/blob";
 import { eq } from "drizzle-orm";
 
-import { db } from "../src/db/index.ts";
-import { ingredients, recipes } from "../src/db/schema.ts";
+import { db } from "@/db";
+import { ingredients, recipes } from "@/db/schema";
+import { storeImage } from "@/lib/storage";
 
 type SeedIngredient = { quantity: string; unit: string; name: string };
 
@@ -86,24 +86,16 @@ const SEED_RECIPES: SeedRecipe[] = [
   },
 ];
 
-const canUploadImages = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
-
 async function uploadImage(filename: string) {
-  const body = await readFile(join(import.meta.dirname, "images", filename));
-  const blob = await put(`recipes/${filename}`, body, {
-    access: "public",
-    contentType: "image/jpeg",
-    addRandomSuffix: true,
-  });
+  const body = await readFile(join(process.cwd(), "seed", "images", filename));
 
-  return { imageUrl: blob.url, imagePathname: blob.pathname };
+  return storeImage(new Blob([body]), filename, "image/jpeg");
 }
 
 // Matched on title, so running this more than once will not create duplicates.
 for (const seed of SEED_RECIPES) {
   const existing = await db.query.recipes.findFirst({ where: eq(recipes.title, seed.title) });
-  const image =
-    canUploadImages && !existing?.imageUrl ? await uploadImage(seed.image) : {};
+  const image = existing?.imageUrl ? {} : await uploadImage(seed.image);
 
   const values = {
     title: seed.title,
@@ -138,10 +130,6 @@ for (const seed of SEED_RECIPES) {
   );
 
   console.log(`Seeded ${seed.title}`);
-}
-
-if (!canUploadImages) {
-  console.log("BLOB_READ_WRITE_TOKEN not set, so photos were skipped.");
 }
 
 process.exit(0);

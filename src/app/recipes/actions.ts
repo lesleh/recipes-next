@@ -1,17 +1,17 @@
 "use server";
 
-import { del, put } from "@vercel/blob";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { ingredients, recipes } from "@/db/schema";
+import { removeImage, storeImage, type StoredImage } from "@/lib/storage";
 import { recipeSchema, validateImage } from "@/lib/validation";
 
 export type RecipeFormState = { errors: string[] };
 
-type StoredImage = { imageUrl: string | null; imagePathname: string | null };
+type ImageChange = StoredImage | { imageUrl: null; imagePathname: null };
 
 function parseIngredients(raw: FormDataEntryValue | null) {
   if (typeof raw !== "string" || raw.trim() === "") return [];
@@ -68,16 +68,12 @@ export async function saveRecipe(
 
   // An upload beats the remove checkbox, so a stale tick cannot discard the
   // file the user just chose.
-  const removeImage = text(formData, "removeImage") === "on" && !hasUpload;
-  let image: StoredImage | null = null;
+  const shouldRemove = text(formData, "removeImage") === "on" && !hasUpload;
+  let image: ImageChange | null = null;
 
   if (hasUpload) {
-    const blob = await put(`recipes/${upload.name}`, upload, {
-      access: "public",
-      addRandomSuffix: true,
-    });
-    image = { imageUrl: blob.url, imagePathname: blob.pathname };
-  } else if (removeImage) {
+    image = await storeImage(upload, upload.name, upload.type);
+  } else if (shouldRemove) {
     image = { imageUrl: null, imagePathname: null };
   }
 
@@ -123,7 +119,7 @@ export async function saveRecipe(
 
   // Only once the row is safely saved, or a failed update would lose the photo.
   if (image && existing?.imagePathname) {
-    await del(existing.imagePathname).catch(() => undefined);
+    await removeImage(existing.imagePathname);
   }
 
   revalidatePath("/");
@@ -141,7 +137,7 @@ export async function deleteRecipe(formData: FormData) {
   await db.delete(recipes).where(eq(recipes.id, id));
 
   if (existing.imagePathname) {
-    await del(existing.imagePathname).catch(() => undefined);
+    await removeImage(existing.imagePathname);
   }
 
   revalidatePath("/");
