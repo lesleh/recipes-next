@@ -10,7 +10,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeListItem }) {
   return (
     <li className="border-line bg-card flex gap-4 rounded-xl border p-4">
       {recipe.imageUrl && (
-        <Link href={`/recipes/${recipe.id}`} className="shrink-0">
+        <Link href={`/recipes/${recipe.slug}`} className="shrink-0">
           <Image
             src={recipe.imageUrl}
             alt=""
@@ -23,7 +23,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeListItem }) {
 
       <div className="min-w-0 flex-1">
         <h2 className="mt-0 mb-1 text-base font-semibold">
-          <Link href={`/recipes/${recipe.id}`} className="text-ink no-underline hover:underline">
+          <Link href={`/recipes/${recipe.slug}`} className="text-ink no-underline hover:underline">
             {recipe.title}
           </Link>
         </h2>

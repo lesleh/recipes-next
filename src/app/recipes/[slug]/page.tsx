@@ -1,31 +1,24 @@
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { ingredientLabel, instructionSteps } from "@/lib/format";
-import { findRecipe } from "@/lib/recipes";
+import { findRecipeBySlug } from "@/lib/recipes";
 
-type PageProps = { params: Promise<{ id: string }> };
+import { loadRecipeBySlug } from "./load";
 
-async function loadRecipe(params: PageProps["params"]) {
-  const { id } = await params;
-  const recipe = Number.isInteger(Number(id)) ? await findRecipe(Number(id)) : undefined;
-
-  if (!recipe) notFound();
-
-  return recipe;
-}
+type PageProps = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: PageProps) {
-  const { id } = await params;
-  const recipe = Number.isInteger(Number(id)) ? await findRecipe(Number(id)) : undefined;
+  const { slug } = await params;
+  const recipe = await findRecipeBySlug(slug);
 
   return { title: recipe?.title ?? "Recipe" };
 }
 
 export default async function RecipePage({ params }: PageProps) {
-  const recipe = await loadRecipe(params);
+  const { slug } = await params;
+  const recipe = await loadRecipeBySlug(slug);
   const steps = instructionSteps(recipe.instructions);
 
   return (
@@ -78,7 +71,7 @@ export default async function RecipePage({ params }: PageProps) {
       </section>
 
       <div className="mt-8 flex flex-wrap items-center gap-2">
-        <Link href={`/recipes/${recipe.id}/edit`} className="button">
+        <Link href={`/recipes/${recipe.slug}/edit`} className="button">
           Edit
         </Link>
         <DeleteRecipeButton id={recipe.id} title={recipe.title} />
