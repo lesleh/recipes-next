@@ -66,7 +66,8 @@ export default async function Image({ params }: PageProps) {
               position: "absolute",
               inset: 0,
               display: "flex",
-              background: "linear-gradient(to top, rgba(22,34,44,0.8), rgba(22,34,44,0) 55%)",
+              background:
+                "linear-gradient(to top, rgba(10,14,18,0.92) 0%, rgba(10,14,18,0.75) 30%, rgba(10,14,18,0.35) 55%, rgba(10,14,18,0) 85%)",
             }}
           />
         )}
