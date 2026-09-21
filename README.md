@@ -24,6 +24,16 @@ pnpm dev
 ```
 
 The application runs at <http://localhost:3000> and starts on the recipe list.
+
+The dev server can run in Compose too, on <http://localhost:3100>:
+
+```bash
+docker compose --profile app up -d --build
+```
+
+That is off by default because a bind-mounted dev server is slower on macOS than
+one on the host. Rebuild the image after changing dependencies, since
+`node_modules` lives in a volume holding Linux builds rather than the host's.
 Seeding is optional and adds three sample recipes. It matches on title, so running
 it more than once will not create duplicates.
 
