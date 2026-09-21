@@ -2,13 +2,14 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { ImageResponse } from "next/og";
+import sharp from "sharp";
 
 import { loadDisplayFont } from "@/lib/og-fonts";
 import { findRecipeBySlug } from "@/lib/recipes";
 
 export const alt = "Recipe photo";
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
+export const contentType = "image/jpeg";
 
 /** A local upload lives under public/; anything else is Vercel Blob, over HTTP. */
 async function loadPhoto(imageUrl: string) {
@@ -33,7 +34,7 @@ export default async function Image({ params }: PageProps) {
     recipe?.imageUrl ? loadPhoto(recipe.imageUrl).catch(() => null) : Promise.resolve(null),
   ]);
 
-  return new ImageResponse(
+  const png = new ImageResponse(
     (
       <div
         style={{
@@ -88,4 +89,12 @@ export default async function Image({ params }: PageProps) {
     ),
     { ...size, fonts: [{ name: "Archivo", data: display, style: "normal", weight: 700 }] },
   );
+
+  // ImageResponse only renders PNG, which is lossless and multiplies the
+  // size of a photo for no visual gain. Re-encoding as JPEG here, after
+  // satori has already composited the photo, title and gradient into one
+  // raster, keeps the card a fraction of the size.
+  const jpeg = await sharp(await png.arrayBuffer()).jpeg({ quality: 82 }).toBuffer();
+
+  return new Response(new Uint8Array(jpeg), { headers: { "Content-Type": contentType } });
 }
