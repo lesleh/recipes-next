@@ -15,5 +15,27 @@ services:
       timeout: 5s
       retries: 10
 
+  # Opt in with: docker compose --profile app up
+  web:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      # Set here rather than in .env.local, because the database is a sibling
+      # container rather than localhost. Next leaves existing variables alone.
+      DATABASE_URL: postgresql://recipes:recipes@postgres:5432/recipes
+    ports:
+      - "3100:3000"
+    volumes:
+      - .:/app
+      - node-modules:/app/node_modules
+      - next-cache:/app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   postgres-data:
+  node-modules:
+  next-cache:

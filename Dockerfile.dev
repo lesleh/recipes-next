@@ -1,0 +1,17 @@
+# Development only. Production builds are handled by Vercel.
+FROM node:24-slim
+
+RUN corepack enable
+
+WORKDIR /app
+
+# Installed in the image so the node_modules volume is populated with Linux
+# builds of the native dependencies rather than the host's macOS ones.
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["pnpm", "dev", "--hostname", "0.0.0.0"]
