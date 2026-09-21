@@ -102,7 +102,8 @@ export default async function RecipePage({ params }: PageProps) {
       </div>
 
       <div className="border-line print-hide mt-10 flex flex-wrap items-center gap-2 border-t pt-5">
-        <Link href={`/recipes/${recipe.slug}/edit`} className="button">
+        {/* Prefetch off: same reason as the header's "New recipe" link. */}
+        <Link href={`/recipes/${recipe.slug}/edit`} prefetch={false} className="button">
           Edit
         </Link>
         <DeleteRecipeButton id={recipe.id} title={recipe.title} />
