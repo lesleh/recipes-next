@@ -3,8 +3,6 @@ import { join } from "node:path";
 
 import { ImageResponse } from "next/og";
 
-import { truncate } from "@/lib/format";
-import { loadBodyFont, loadDisplayFont } from "@/lib/og-fonts";
 import { findRecipeBySlug } from "@/lib/recipes";
 
 export const alt = "Recipe photo";
@@ -24,33 +22,19 @@ async function loadPhoto(imageUrl: string) {
 
 type PageProps = { params: Promise<{ slug: string }> };
 
+/**
+ * The title and description already reach the share card through
+ * `openGraph.title`/`description` in generateMetadata, so this is just the
+ * photo. A recipe without one falls back to the site's own off-white.
+ */
 export default async function Image({ params }: PageProps) {
   const { slug } = await params;
   const recipe = await findRecipeBySlug(slug);
-  const title = recipe?.title ?? "Recipe";
-  const description = recipe?.description ? truncate(recipe.description, 140) : null;
-
-  const [display, body, photo] = await Promise.all([
-    loadDisplayFont(title),
-    loadBodyFont(description ?? title),
-    recipe?.imageUrl ? loadPhoto(recipe.imageUrl).catch(() => null) : Promise.resolve(null),
-  ]);
+  const photo = recipe?.imageUrl ? await loadPhoto(recipe.imageUrl).catch(() => null) : null;
 
   return new ImageResponse(
     (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          position: "relative",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-          padding: "64px",
-          background: photo ? "#16222c" : "#edf1ee",
-          fontFamily: "Atkinson Hyperlegible",
-        }}
-      >
+      <div style={{ width: "100%", height: "100%", display: "flex", background: "#edf1ee" }}>
         {photo && (
           <img
             // Satori accepts an ArrayBuffer for <img src> at runtime, ahead of the DOM spec.
@@ -59,49 +43,11 @@ export default async function Image({ params }: PageProps) {
             alt=""
             width={1200}
             height={630}
-            style={{ position: "absolute", top: 0, left: 0, objectFit: "cover" }}
+            style={{ objectFit: "cover" }}
           />
         )}
-
-        <div style={{ display: "flex", position: "relative", flexDirection: "column" }}>
-          <div
-            style={{
-              display: "flex",
-              fontSize: 72,
-              fontFamily: "Archivo",
-              fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: "-0.02em",
-              color: photo ? "#ffffff" : "#16222c",
-              textShadow: photo ? "0 2px 4px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.55)" : "none",
-            }}
-          >
-            {title}
-          </div>
-
-          {description && (
-            <div
-              style={{
-                display: "flex",
-                marginTop: 16,
-                fontSize: 30,
-                maxWidth: 980,
-                color: photo ? "#ffffff" : "#4e5c66",
-                textShadow: photo ? "0 1px 3px rgba(0, 0, 0, 0.5), 0 6px 18px rgba(0, 0, 0, 0.5)" : "none",
-              }}
-            >
-              {description}
-            </div>
-          )}
-        </div>
       </div>
     ),
-    {
-      ...size,
-      fonts: [
-        { name: "Archivo", data: display, style: "normal", weight: 700 },
-        { name: "Atkinson Hyperlegible", data: body, style: "normal", weight: 400 },
-      ],
-    },
+    size,
   );
 }
