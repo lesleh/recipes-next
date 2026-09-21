@@ -10,7 +10,19 @@ export type StoredImage = { imageUrl: string; imagePathname: string };
 const LOCAL_PREFIX = "uploads/";
 const LOCAL_DIR = join(process.cwd(), "public", LOCAL_PREFIX);
 
-const usingBlob = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+function usingBlob() {
+  if (process.env.BLOB_READ_WRITE_TOKEN) return true;
+
+  // The disk fallback is for local development. A deployed filesystem is read
+  // only, so say why rather than failing later with EROFS.
+  if (process.env.VERCEL) {
+    throw new Error(
+      "BLOB_READ_WRITE_TOKEN is not set, and photos cannot be written to disk when deployed.",
+    );
+  }
+
+  return false;
+}
 
 function safeName(filename: string) {
   return filename.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-|-$/g, "");

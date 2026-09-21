@@ -12,7 +12,14 @@ if (!databaseUrl) {
 // TLS is driven entirely by sslmode in the connection string, so the same code
 // reaches both the local Compose database and a managed one.
 function connect() {
-  return drizzle(new Pool({ connectionString: databaseUrl }), { schema });
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    // A serverless instance serves one request at a time, so a larger pool only
+    // holds connections open against the database's own limit.
+    max: process.env.VERCEL ? 1 : 10,
+  });
+
+  return drizzle(pool, { schema });
 }
 
 // Next reloads modules on every edit in development, which would otherwise
