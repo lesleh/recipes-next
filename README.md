@@ -63,6 +63,29 @@ replaces a recipe's ingredient rows wholesale rather than diffing them.
 Each recipe can carry one photo, rendered through `next/image`, which handles
 resizing.
 
+## Recipe addresses
+
+A recipe is reached at `/recipes/<slug>`, and its numeric id never appears in an
+address. The slug is built from the title by `slugify` in `src/lib/slug.ts`:
+accented letters are reduced to their base letter, letters from other scripts are
+kept as they are, and everything else becomes a hyphen.
+
+Slugs are unique across the whole site, and the rule is enforced on the slug
+rather than the title, so `Chocolate cake` and `Chocolate Cake!` collide. A save
+that would take a slug another recipe holds is refused with a message. Nothing
+invents a numbered suffix. Two titles are refused outright: one that produces an
+empty slug, and one that produces `new`, which is already the address of the new
+recipe form.
+
+Renaming a recipe changes its address. The `recipe_slugs` table keeps every slug
+a recipe has ever held, so an old address still reaches the recipe, in a single
+redirect however many times it has been renamed. Because the table holds retired
+slugs too, a different recipe cannot take one. A recipe can always take back a
+slug from its own history.
+
+Deleting a recipe clears its rows in `recipe_slugs` through the same cascade that
+removes its ingredients, so every slug it held is free for another recipe again.
+
 ## Database
 
 The schema lives in `src/db/schema.ts` and migrations are generated from it:
