@@ -1,13 +1,27 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { SITE_DESCRIPTION, SITE_NAME, siteUrl } from "@/lib/site";
+
 import { body, display } from "./fonts";
 
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "Recipes", template: "%s | Recipes" },
-  description: "Keeping recipes: what goes in them, how long they take, and how to cook them.",
+  metadataBase: siteUrl(),
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
