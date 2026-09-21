@@ -11,13 +11,15 @@ const LOCAL_PREFIX = "uploads/";
 const LOCAL_DIR = join(process.cwd(), "public", LOCAL_PREFIX);
 
 function usingBlob() {
-  if (process.env.BLOB_READ_WRITE_TOKEN) return true;
+  // The SDK takes a read/write token, or OIDC plus a store id, which is what a
+  // Blob store connected to a Vercel project provides.
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) return true;
 
   // The disk fallback is for local development. A deployed filesystem is read
   // only, so say why rather than failing later with EROFS.
   if (process.env.VERCEL) {
     throw new Error(
-      "BLOB_READ_WRITE_TOKEN is not set, and photos cannot be written to disk when deployed.",
+      "No blob credentials found. Connect a Blob store to the project, or set BLOB_READ_WRITE_TOKEN.",
     );
   }
 
