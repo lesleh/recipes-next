@@ -1,0 +1,42 @@
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A second push to a branch cancels the run still going for the first.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The same service the tests use locally, so the connection string in
+      # .env.test is right here too and the job needs no secret. Compose waits
+      # for the healthcheck.
+      - name: Start the test database
+        run: docker compose up -d --wait postgres-test
+
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - run: pnpm test:run
+
+      # `pnpm build` is not here. It needs a reachable database to collect
+      # page data, and Vercel already builds every pull request.

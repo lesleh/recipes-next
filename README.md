@@ -47,7 +47,51 @@ Compose database, and with no blob token set, photos are written to
 pnpm typecheck
 pnpm lint
 pnpm build
+pnpm test
 ```
+
+All four run on every pull request, through `.github/workflows/checks.yml`,
+except `pnpm build`, which Vercel runs for the preview deployment.
+
+## Tests
+
+Tests are written with [Vitest](https://vitest.dev). `pnpm test` watches, and
+`pnpm test:run` runs once. `pnpm test:coverage` writes a report to `coverage/`.
+
+The tests that need a database need the test database running:
+
+```bash
+docker compose up -d --wait postgres-test
+```
+
+That is a second Postgres, on port 5433, holding `recipes_test`. It is separate
+from the development database so a test run cannot empty the recipes you are
+working with, and its data lives on tmpfs, so stopping the container throws it
+away. It sits behind the `test` profile, so `docker compose up -d` does not
+start it. Naming it on the command line starts it anyway, as above.
+
+There are two suites, and `pnpm test` runs both:
+
+- `unit`, for `src/**/*.test.ts`. Pure functions, no database, run in parallel.
+- `db`, for `tests/db/**/*.test.ts`. One test database shared, so these files
+  run one at a time.
+
+The schema is built once before the suite starts, by dropping both schemas and
+applying the migrations. Between tests, `TRUNCATE recipes, recipe_slugs RESTART
+IDENTITY CASCADE` empties everything, since ingredients and slug history cascade
+from recipes. Rolling back a transaction would be faster, but the code under
+test opens transactions of its own on a pooled connection, so it cannot share
+one with the test.
+
+The connection string is in `.env.test`, which is committed because it holds no
+secret. The database name has to end in `_test` or the run is refused, checked
+before any test connects and again in the code that truncates.
+
+A server action reaches for `next/headers`, `next/cache`, `next/navigation` and
+the photo store. `tests/support/next-mocks.ts` stands in for all four, and is
+loaded before any test file so its mocks take effect. `redirect` throws there as
+it does in Next, carrying the address, so a test can read where the reader was
+sent.
 
 ## Data model
 
