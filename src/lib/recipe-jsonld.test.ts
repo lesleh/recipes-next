@@ -13,6 +13,7 @@ function recipe(overrides: Overrides = {}) {
     cookTimeMinutes: null,
     instructions: null,
     imageUrl: null,
+    createdAt: new Date("2026-05-28T18:00:00.000Z"),
     updatedAt: new Date("2026-06-04T09:30:00.000Z"),
     ingredients: [],
     ...overrides,
@@ -58,6 +59,7 @@ describe("recipeJsonLd", () => {
         { "@type": "HowToStep", text: "Whisk the batter" },
         { "@type": "HowToStep", text: "Fry the pancakes" },
       ],
+      datePublished: "2026-05-28T18:00:00.000Z",
       dateModified: "2026-06-04T09:30:00.000Z",
     });
   });
@@ -68,6 +70,7 @@ describe("recipeJsonLd", () => {
       "@type": "Recipe",
       name: "Pancakes",
       author: { "@type": "Person", name: "Leslie Hoare" },
+      datePublished: "2026-05-28T18:00:00.000Z",
       dateModified: "2026-06-04T09:30:00.000Z",
     });
   });

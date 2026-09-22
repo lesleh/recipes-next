@@ -12,6 +12,7 @@ type RecipeForJsonLd = Pick<
   | "cookTimeMinutes"
   | "instructions"
   | "imageUrl"
+  | "createdAt"
   | "updatedAt"
 > & { ingredients: Pick<Ingredient, "name" | "quantity" | "unit">[] };
 
@@ -31,7 +32,8 @@ export type RecipeJsonLd = {
   totalTime?: string;
   recipeIngredient?: string[];
   recipeInstructions?: HowToStep[];
-  dateModified?: string;
+  datePublished: string;
+  dateModified: string;
 };
 
 /** Minutes as an ISO 8601 duration, such as 20 minutes to "PT20M". */
@@ -76,6 +78,7 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
     ...(steps.length > 0
       ? { recipeInstructions: steps.map((text) => ({ "@type": "HowToStep" as const, text })) }
       : {}),
+    datePublished: recipe.createdAt.toISOString(),
     dateModified: recipe.updatedAt.toISOString(),
   };
 }
