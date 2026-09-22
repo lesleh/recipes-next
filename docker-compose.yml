@@ -15,6 +15,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # Only for `pnpm test`, and only while a test run needs it. Naming it on the
+  # command line starts it despite the profile, so this is the whole command:
+  #   docker compose up -d --wait postgres-test
+  # Its own port and database, so a test run cannot reach the development data,
+  # and its data is on tmpfs, so stopping the container throws it away.
+  postgres-test:
+    profiles: ["test"]
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: recipes
+      POSTGRES_PASSWORD: recipes
+      POSTGRES_DB: recipes_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U recipes -d recipes_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # Opt in with: docker compose --profile app up
   web:
     profiles: ["app"]
