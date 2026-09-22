@@ -5,12 +5,27 @@ import Link from "next/link";
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { ingredientAmount, instructionSteps, truncate } from "@/lib/format";
 import { jsonLdScript, recipeJsonLd } from "@/lib/recipe-jsonld";
-import { findRecipeBySlug } from "@/lib/recipes";
+import { findRecipeBySlug, listRecipeAddresses } from "@/lib/recipes";
 import { SITE_NAME } from "@/lib/site";
 
 import { loadRecipeBySlug } from "./load";
 
 type PageProps = { params: Promise<{ slug: string }> };
+
+/**
+ * Prerender every recipe at build time, so a reader waits for a file rather
+ * than for a database. The build migrates the database first, so it is
+ * reachable here.
+ *
+ * A slug this misses still works: a recipe added since the build renders once
+ * on demand, and a retired slug redirects on demand. Both are then kept, and
+ * the save and delete actions revalidate the addresses they change.
+ */
+export async function generateStaticParams() {
+  const recipes = await listRecipeAddresses();
+
+  return recipes.map(({ slug }) => ({ slug }));
+}
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
