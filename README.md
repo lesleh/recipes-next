@@ -130,6 +130,39 @@ slug from its own history.
 Deleting a recipe clears its rows in `recipe_slugs` through the same cascade that
 removes its ingredients, so every slug it held is free for another recipe again.
 
+## Search engine data
+
+A recipe page carries an `application/ld+json` block describing the recipe with
+the schema.org Recipe type, built by `recipeJsonLd` in
+`src/lib/recipe-jsonld.ts`. It holds the title, description, photo, servings,
+times, ingredients and method, and leaves out anything the recipe does not
+have. A field sent empty reads as a field with no value rather than a missing
+one.
+
+Times are ISO 8601 durations in minutes, such as `PT20M`. `totalTime` is prep
+plus cook, and appears when either is set.
+
+The whole block goes through `jsonLdScript`, which escapes `<` as `\u003c`.
+`JSON.stringify` leaves `<` alone, so a title holding `</script>` would
+otherwise end the tag early.
+
+Check a page with the [Rich Results Test](https://search.google.com/test/rich-results),
+which needs a deployed address, or paste the block into the
+[Schema Markup Validator](https://validator.schema.org/).
+
+## Site address
+
+The site origin comes from `siteUrl` in `src/lib/site.ts`, and the production
+domain appears nowhere in the code. It reads, in order:
+
+1. `SITE_URL`, a full address with its scheme, for a self-hosted run.
+2. `VERCEL_PROJECT_PRODUCTION_URL`, which Vercel sets to the project's production domain, with no scheme, on preview deployments too.
+3. `http://localhost:3000`, for local development.
+
+`absoluteUrl` resolves a path against that origin and leaves an address that
+already carries one alone. Photos on Vercel Blob are absolute already, so only
+the local fallback under `public/uploads` needs the origin adding.
+
 ## Design
 
 Every colour is a theme token in `src/app/globals.css`. No component writes a

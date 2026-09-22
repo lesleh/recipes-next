@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { ingredientAmount, instructionSteps, truncate } from "@/lib/format";
+import { jsonLdScript, recipeJsonLd } from "@/lib/recipe-jsonld";
 import { findRecipeBySlug } from "@/lib/recipes";
 import { SITE_NAME } from "@/lib/site";
 
@@ -40,6 +41,13 @@ export default async function RecipePage({ params }: PageProps) {
 
   return (
     <article className="page">
+      {/* Structured data for search engines. A native script tag, because this
+          is data rather than code for the browser to run. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(recipeJsonLd(recipe)) }}
+      />
+
       <h1>{recipe.title}</h1>
 
       {recipe.description && (
