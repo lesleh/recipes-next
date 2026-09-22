@@ -1,7 +1,7 @@
 import type { Ingredient, Recipe } from "@/db/schema";
 
 import { ingredientAmount, instructionSteps, pluralize, totalTimeMinutes } from "./format";
-import { absoluteUrl } from "./site";
+import { absoluteUrl, SITE_AUTHOR } from "./site";
 
 type RecipeForJsonLd = Pick<
   Recipe,
@@ -16,11 +16,13 @@ type RecipeForJsonLd = Pick<
 > & { ingredients: Pick<Ingredient, "name" | "quantity" | "unit">[] };
 
 type HowToStep = { "@type": "HowToStep"; text: string };
+type Person = { "@type": "Person"; name: string };
 
 export type RecipeJsonLd = {
   "@context": "https://schema.org";
   "@type": "Recipe";
   name: string;
+  author: Person;
   description?: string;
   image?: string;
   recipeYield?: string;
@@ -57,6 +59,9 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
     "@context": "https://schema.org",
     "@type": "Recipe",
     name: recipe.title,
+    // One person writes every recipe here, so the author is the site's rather
+    // than a field on the recipe.
+    author: { "@type": "Person", name: SITE_AUTHOR },
     ...(description ? { description } : {}),
     // Vercel Blob gives back an absolute address already. Only the local
     // fallback under public/uploads needs an origin in front of it.

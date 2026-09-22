@@ -46,6 +46,7 @@ describe("recipeJsonLd", () => {
       "@context": "https://schema.org",
       "@type": "Recipe",
       name: "Pancakes",
+      author: { "@type": "Person", name: "Leslie Hoare" },
       description: "Thin ones, the way they should be.",
       image: "https://blob.example/recipes/pancakes.jpg",
       recipeYield: "4 servings",
@@ -66,6 +67,7 @@ describe("recipeJsonLd", () => {
       "@context": "https://schema.org",
       "@type": "Recipe",
       name: "Pancakes",
+      author: { "@type": "Person", name: "Leslie Hoare" },
       dateModified: "2026-06-04T09:30:00.000Z",
     });
   });
