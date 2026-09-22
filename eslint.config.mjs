@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Written by `pnpm test:coverage`. eslint does not read .gitignore.
+    "coverage/**",
   ]),
 ]);
 
