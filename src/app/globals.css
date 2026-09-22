@@ -207,6 +207,21 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* The trail above the title. Quiet by design: it says where you are and
+     leaves the h1 under it as the loud thing. */
+  .breadcrumb {
+    @apply text-ink-soft m-0 flex list-none flex-wrap items-center gap-x-2 gap-y-1 p-0 text-sm;
+  }
+
+  .breadcrumb li + li::before {
+    content: "/";
+    @apply text-ink-faint mr-2;
+  }
+
+  .breadcrumb [aria-current="page"] {
+    @apply font-semibold;
+  }
+
   .panel {
     @apply border-line bg-card rounded-surface border p-5;
   }

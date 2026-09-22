@@ -1,7 +1,7 @@
 import type { Ingredient, Recipe } from "@/db/schema";
 
 import { ingredientAmount, instructionSteps, pluralize, totalTimeMinutes } from "./format";
-import { absoluteUrl, SITE_AUTHOR } from "./site";
+import { absoluteUrl, SITE_AUTHOR, SITE_NAME } from "./site";
 
 type RecipeForJsonLd = Pick<
   Recipe,
@@ -18,6 +18,7 @@ type RecipeForJsonLd = Pick<
 
 type HowToStep = { "@type": "HowToStep"; text: string };
 type Person = { "@type": "Person"; name: string };
+type ListItem = { "@type": "ListItem"; position: number; name: string; item?: string };
 
 export type RecipeJsonLd = {
   "@context": "https://schema.org";
@@ -83,11 +84,33 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
   };
 }
 
+export type BreadcrumbJsonLd = {
+  "@context": "https://schema.org";
+  "@type": "BreadcrumbList";
+  itemListElement: ListItem[];
+};
+
+/**
+ * The trail from the recipe list to this recipe, matching the one the page
+ * shows. The last item carries no `item`, because it is the page being read
+ * and a search engine reads a self address there as a second, separate page.
+ */
+export function breadcrumbJsonLd(recipe: Pick<Recipe, "title">): BreadcrumbJsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: SITE_NAME, item: absoluteUrl("/") },
+      { "@type": "ListItem", position: 2, name: recipe.title },
+    ],
+  };
+}
+
 /**
  * JSON-LD ready for a script tag. JSON.stringify leaves "<" alone, so a title
  * holding "</script>" would end the tag early. Its unicode escape means the
  * same string to a JSON reader and nothing to an HTML parser.
  */
-export function jsonLdScript(data: RecipeJsonLd) {
+export function jsonLdScript(data: BreadcrumbJsonLd | RecipeJsonLd) {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }

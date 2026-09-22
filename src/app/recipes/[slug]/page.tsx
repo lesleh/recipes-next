@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
 import { ingredientAmount, instructionSteps, truncate } from "@/lib/format";
-import { jsonLdScript, recipeJsonLd } from "@/lib/recipe-jsonld";
+import { breadcrumbJsonLd, jsonLdScript, recipeJsonLd } from "@/lib/recipe-jsonld";
 import { findRecipeBySlug, listRecipeAddresses } from "@/lib/recipes";
 import { SITE_NAME } from "@/lib/site";
 
@@ -62,8 +62,23 @@ export default async function RecipePage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(recipeJsonLd(recipe)) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(breadcrumbJsonLd(recipe)) }}
+      />
 
-      <h1>{recipe.title}</h1>
+      {/* The trail the breadcrumb data describes. Search engines discount
+          structured data that names a path the page does not show. */}
+      <nav aria-label="Breadcrumb" className="print-hide">
+        <ol className="breadcrumb">
+          <li>
+            <Link href="/">{SITE_NAME}</Link>
+          </li>
+          <li aria-current="page">{recipe.title}</li>
+        </ol>
+      </nav>
+
+      <h1 className="mt-2">{recipe.title}</h1>
 
       {recipe.description && (
         <p className="text-ink-soft mt-3 max-w-[58ch] text-lg">{recipe.description}</p>
