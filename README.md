@@ -386,6 +386,11 @@ production build fails without it. Add `AI_GATEWAY_API_KEY` too if you want the
 page that writes a recipe from a prompt; nothing else needs it. That is the
 whole setup.
 
+Page timings go to Vercel Speed Insights, through the `<SpeedInsights />` in
+`src/app/layout.tsx`. It reports only when the site runs on Vercel, so a local
+run and a self-hosted one are unaffected, and the readings are under Speed
+Insights in the project.
+
 Production deployments run their migrations as part of the build, through
 `scripts/migrate.mjs`. Preview deployments skip them, because they share the
 production database and a branch should not apply its schema before it merges.
