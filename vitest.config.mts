@@ -30,7 +30,9 @@ export default defineConfig({
           include: ["tests/db/**/*.test.ts"],
           env: testEnv,
           globalSetup: ["./tests/support/global-setup.ts"],
-          setupFiles: ["./tests/support/truncate.ts"],
+          // next-mocks registers its mocks when it loads, so it has to load
+          // before a test file imports the code under test.
+          setupFiles: ["./tests/support/next-mocks.ts", "./tests/support/truncate.ts"],
           fileParallelism: false,
         },
       },
