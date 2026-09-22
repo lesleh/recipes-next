@@ -415,10 +415,18 @@ Worth knowing:
 
 ## Recipe photos
 
-Photos are generated with Gemini rather than taken. The prompt that keeps them
-in a consistent style lives in [docs/recipe-image-prompt.md](docs/recipe-image-prompt.md).
-Paste the recipe onto the end of it, generate, then upload the result on the
-recipe's edit page.
+Photos are generated with Gemini rather than taken. Press Copy image prompt on
+the recipe's edit page, under Photo: that puts the style block and the recipe on
+the clipboard, ready to paste into Gemini. Generate, then upload the result in
+the field above the button.
+
+It sits on the edit page because that is where the photo is uploaded, and the
+whole job happens in one place. The style block lives in
+`src/lib/recipe-image-prompt.ts`, and the reasoning behind it in
+[docs/recipe-image-prompt.md](docs/recipe-image-prompt.md).
+
+The button copies the recipe as saved rather than what is typed into the form,
+because a photo is generated from a recipe that exists.
 
 The three photos in `seed/images` came from the Rails application this replaced.
 
