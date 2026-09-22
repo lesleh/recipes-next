@@ -69,8 +69,11 @@ export default async function Image({ params }: PageProps) {
               width: "100%",
               height: "100%",
               display: "flex",
+              // A two-line title reaches 35% of the card's height, so the scrim
+              // holds its strength to there and is gone by 60%. Above that the
+              // photo is the point of the card.
               background:
-                "linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.88) 40%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0) 92%)",
+                "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.62) 20%, rgba(0,0,0,0.42) 35%, rgba(0,0,0,0.18) 48%, rgba(0,0,0,0) 60%)",
             }}
           />
         )}
