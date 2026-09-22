@@ -4,7 +4,12 @@ import { redirect } from "next/navigation";
 
 import { checkSlug, persistRecipe, requireWriteAccess } from "@/app/recipes/save";
 import { MAX_PROMPT_LENGTH, resolveModel } from "@/lib/ai-models";
-import { askModelForRecipe, GATEWAY_KEY_MISSING, toRecipeInput } from "@/lib/recipe-writer";
+import {
+  askModelForRecipe,
+  describeFailure,
+  GATEWAY_KEY_MISSING,
+  toRecipeInput,
+} from "@/lib/recipe-writer";
 import { slugify } from "@/lib/slug";
 import { recipeSchema } from "@/lib/validation";
 
@@ -33,11 +38,12 @@ export async function writeRecipe(
   try {
     generated = await askModelForRecipe(prompt, model);
   } catch (error) {
-    // Logged because the reason, a refused key or a model that is gone, is
-    // only visible here. A reader can only try again, or pick another model.
+    // Logged whole, and the first line of it goes to the page. The reasons
+    // that happen, a refused key or a model the account cannot reach, are all
+    // fixed by the person reading, so hiding them helps nobody.
     console.error("Asking for a recipe failed", error);
 
-    return { error: "The model could not write a recipe. Try again, or pick another model." };
+    return { error: describeFailure(error) };
   }
 
   // The same schema the form goes through, so a model meets the same limits a

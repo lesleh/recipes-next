@@ -316,7 +316,14 @@ the budget stops a loop.
 ### The key
 
 The gateway reads `AI_GATEWAY_API_KEY`. Without it, the page says it is not set
-up and links to the form, and the rest of the site is unaffected. A production
+up and links to the form, and the rest of the site is unaffected.
+
+A valid key is not always enough. The gateway's free tier covers a subset of
+the catalogue, so a model outside it is refused with "Free tier users do not
+have access to this model" until the team buys AI Gateway credits. Buying
+credits moves the team to the paid tier and does not need a Pro plan. The page
+repeats whatever the gateway said, so a refusal reads as itself rather than as
+a generic failure. A production
 build is not held to it, unlike `RECIPES_WRITE_PASSWORD`, because a missing
 write password breaks every write page and a missing gateway key breaks one.
 

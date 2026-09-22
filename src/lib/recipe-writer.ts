@@ -94,6 +94,61 @@ export function toRecipeInput(generated: GeneratedRecipe): RecipeInput {
   };
 }
 
+/** The status a gateway or provider error carries, when it carries one. */
+function statusOf(error: unknown) {
+  if (typeof error !== "object" || error === null || !("statusCode" in error)) return undefined;
+
+  const status = (error as { statusCode?: unknown }).statusCode;
+
+  return typeof status === "number" ? status : undefined;
+}
+
+/**
+ * The first line of what the gateway said, which is the part worth reading.
+ * The rest is a stack, and the message arrives with terminal colour codes in
+ * it, which would show as gibberish on the page.
+ */
+function detailOf(error: unknown) {
+  if (!(error instanceof Error)) return "";
+
+  const line = error.message
+    .replace(/\u001b\[[0-9;]*m/g, "")
+    .split("\n")
+    .map((part) => part.trim())
+    .find((part) => part !== "");
+
+  if (!line) return "";
+
+  return line.length > 200 ? `${line.slice(0, 199)}...` : line;
+}
+
+/**
+ * What to tell the reader when the model call throws. The reason is nearly
+ * always something only the owner can fix, such as a key the gateway refuses
+ * or a model the account cannot reach, so it is repeated on the page rather
+ * than left in the server log.
+ */
+export function describeFailure(error: unknown) {
+  const detail = detailOf(error);
+  const status = statusOf(error);
+
+  if (status === 401 || status === 403) {
+    return detail
+      ? `The AI Gateway refused the request. ${detail}`
+      : "The AI Gateway refused the request. Check AI_GATEWAY_API_KEY.";
+  }
+
+  if (status === 429) {
+    return detail
+      ? `The AI Gateway is rate limiting. ${detail}`
+      : "The AI Gateway is rate limiting. Try again in a minute.";
+  }
+
+  return detail
+    ? `The model could not write a recipe. ${detail}`
+    : "The model could not write a recipe. Try again, or pick another model.";
+}
+
 /**
  * Ask a model for a recipe. The model is a plain "creator/model-name" string,
  * which routes through the Vercel AI Gateway on `AI_GATEWAY_API_KEY`, so no
