@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { generatedRecipeSchema, toRecipeInput, type GeneratedRecipe } from "./recipe-writer";
+import {
+  buildPrompt,
+  describeFailure,
+  generatedRecipeSchema,
+  toRecipeInput,
+  type GeneratedRecipe,
+} from "./recipe-writer";
 import { recipeSchema } from "./validation";
 
 const generated: GeneratedRecipe = {
@@ -92,5 +98,82 @@ describe("generatedRecipeSchema", () => {
     delete incomplete.servings;
 
     expect(generatedRecipeSchema.safeParse(incomplete).success).toBe(false);
+  });
+});
+
+/** A gateway error, which carries its status on the error itself. */
+function gatewayError(message: string, statusCode: number) {
+  return Object.assign(new Error(message), { statusCode });
+}
+
+describe("describeFailure", () => {
+  it("repeats what the gateway said when it refuses", () => {
+    const message = describeFailure(
+      gatewayError("Free tier users do not have access to this model.", 403),
+    );
+
+    expect(message).toBe(
+      "The AI Gateway refused the request. Free tier users do not have access to this model.",
+    );
+  });
+
+  it("names the key when a refusal says nothing useful", () => {
+    expect(describeFailure(gatewayError("", 401))).toContain("AI_GATEWAY_API_KEY");
+  });
+
+  it("says so when the gateway is rate limiting", () => {
+    expect(describeFailure(gatewayError("Too many requests.", 429))).toBe(
+      "The AI Gateway is rate limiting. Too many requests.",
+    );
+  });
+
+  it("keeps the first line, because the rest is a stack", () => {
+    const message = describeFailure(new Error("Unauthenticated request.\n\nSet the variable."));
+
+    expect(message).toBe("The model could not write a recipe. Unauthenticated request.");
+  });
+
+  it("strips the colour codes the gateway writes for a terminal", () => {
+    const message = describeFailure(new Error("\u001b[31mUnauthenticated request.\u001b[0m"));
+
+    expect(message).toBe("The model could not write a recipe. Unauthenticated request.");
+  });
+
+  it("cuts a very long line", () => {
+    const message = describeFailure(new Error("x".repeat(400)));
+
+    expect(message.length).toBeLessThan(250);
+    expect(message.endsWith("...")).toBe(true);
+  });
+
+  it("falls back when what was thrown is not an error", () => {
+    expect(describeFailure("something")).toBe(
+      "The model could not write a recipe. Try again, or pick another model.",
+    );
+  });
+});
+
+describe("buildPrompt", () => {
+  it("sends the request alone for a first draft", () => {
+    expect(buildPrompt({ prompt: "a weeknight dal" })).toBe("a weeknight dal");
+  });
+
+  it("sends the request alone when there is nothing to change", () => {
+    expect(buildPrompt({ prompt: "a weeknight dal", draft: generated, change: "  " })).toBe(
+      "a weeknight dal",
+    );
+  });
+
+  it("carries the draft and the change together", () => {
+    const text = buildPrompt({
+      prompt: "a weeknight dal",
+      draft: generated,
+      change: "make it vegan",
+    });
+
+    expect(text).toContain("a weeknight dal");
+    expect(text).toContain('"title": "Red lentil dal"');
+    expect(text).toContain("Change it as follows: make it vegan");
+    expect(text).toContain("leave everything the change does not touch as it is");
   });
 });

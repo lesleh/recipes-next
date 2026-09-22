@@ -42,3 +42,6 @@ export function resolveModel(value: unknown): RecipeModelId {
 
 /** Long enough for a fussy request, short enough to cap what we pay to read. */
 export const MAX_PROMPT_LENGTH = 500;
+
+/** A change to a draft is an instruction, not a recipe, so it is shorter. */
+export const MAX_CHANGE_LENGTH = 300;
