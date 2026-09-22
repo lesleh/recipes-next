@@ -1,4 +1,5 @@
 import { and, asc, eq, exists, ilike, or, sql } from "drizzle-orm";
+import { cache } from "react";
 
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes } from "@/db/schema";
@@ -50,14 +51,19 @@ export async function listRecipeAddresses() {
     .orderBy(asc(recipes.slug));
 }
 
-export async function findRecipeBySlug(slug: string) {
+/**
+ * Wrapped in `cache` because a page and its `generateMetadata` both need the
+ * recipe, and each render would otherwise ask the database for it twice. The
+ * memo lasts one render and no longer, so a save is never served stale.
+ */
+export const findRecipeBySlug = cache(async (slug: string) => {
   return db.query.recipes.findFirst({
     where: eq(recipes.slug, slug),
     with: {
       ingredients: { orderBy: [asc(ingredients.position), asc(ingredients.id)] },
     },
   });
-}
+});
 
 /**
  * The slug a recipe answers at now, given any slug it has ever held. Returns
