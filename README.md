@@ -276,6 +276,67 @@ oversight: one author on their own devices is the case being built for, and the
 browser drops the password when it closes. On a shared computer the write pages
 stay open until then.
 
+## Writing a recipe with AI
+
+`/recipes/new/ai` writes a whole recipe from a sentence. You describe the dish,
+a language model returns it as structured JSON, and the recipe is saved and
+opened for you. There is no review step first: the edit page is already the
+place to fix a wrong quantity.
+
+It sits under `/recipes/new` so that `ai` does not have to be a reserved slug,
+and it needs the same write password as the other write pages. The password is
+checked twice, in `src/proxy.ts` and in the server function, for the reason
+given above.
+
+The page asks for one free-text prompt, capped at 500 characters. Servings and
+dietary needs go in the prompt rather than in fields of their own, because a
+sentence says them better than a form does. The prompt is used and then
+dropped; nothing keeps it after the recipe is saved.
+
+Photos are not generated. A new recipe has none until you upload one, as
+described in 'Recipe photos' below.
+
+### The models
+
+`src/lib/ai-models.ts` holds the list the page offers, cheapest first, with the
+prices it was written from. A plain `creator/model-name` string routes through
+the [Vercel AI Gateway](https://vercel.com/ai-gateway/models), so no provider
+package is installed and adding a model is one line. Only models the gateway
+marks as supporting structured output belong on the list.
+
+The form sends the chosen model, and `resolveModel` checks it against the same
+list before anything is asked. A form value cannot be trusted even behind a
+password, and an unknown model string would send the spend wherever the sender
+chose.
+
+There is no rate limit in the code. Set a budget on the gateway instead, under
+AI Gateway > Budgets in the Vercel dashboard. The password stops strangers, and
+the budget stops a loop.
+
+### The key
+
+The gateway reads `AI_GATEWAY_API_KEY`. Without it, the page says it is not set
+up and links to the form, and the rest of the site is unaffected. A production
+build is not held to it, unlike `RECIPES_WRITE_PASSWORD`, because a missing
+write password breaks every write page and a missing gateway key breaks one.
+
+### The two schemas
+
+`recipeSchema` in `src/lib/validation.ts` reads an HTML form, so it turns blank
+strings into nulls and coerces numbers out of strings. A preprocess step is not
+something a provider can turn into a JSON schema, so the model gets its own
+schema, `generatedRecipeSchema` in `src/lib/recipe-writer.ts`. Each field
+carries a `describe`, and that text is what the model is told.
+
+`toRecipeInput` maps one to the other, dropping blank lines and the model's own
+step numbers, which it writes whatever the schema says. The result then goes
+through `recipeSchema`, so a model meets the same length limits as a person
+typing.
+
+Both ways of making a recipe share `src/app/recipes/save.ts`: the password
+check, the slug rules and the write itself. Only where the recipe came from
+differs.
+
 ## Deploying to Vercel
 
 Import the repository, then under Storage create a Neon Postgres database and a
@@ -285,7 +346,9 @@ the `VERCEL_OIDC_TOKEN` that Vercel issues. No read/write token is needed when
 running on Vercel.
 
 Add `RECIPES_WRITE_PASSWORD` yourself, under Settings > Environment Variables. A
-production build fails without it. That is the whole setup.
+production build fails without it. Add `AI_GATEWAY_API_KEY` too if you want the
+page that writes a recipe from a prompt; nothing else needs it. That is the
+whole setup.
 
 Production deployments run their migrations as part of the build, through
 `scripts/migrate.mjs`. Preview deployments skip them, because they share the
