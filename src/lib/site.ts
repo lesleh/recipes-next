@@ -1,4 +1,5 @@
 export const SITE_NAME = "Recipes";
+export const SITE_AUTHOR = "Leslie Hoare";
 export const SITE_DESCRIPTION =
   "Keeping recipes: what goes in them, how long they take, and how to cook them.";
 

@@ -1,13 +1,32 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 import { RecipeCard } from "@/components/recipe-card";
 import { listRecipes } from "@/lib/recipes";
 
-export default async function RecipesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
+type PageProps = { searchParams: Promise<{ q?: string }> };
+
+/**
+ * A search is the recipe list filtered, not a page of its own, so it is kept
+ * out of the index. Otherwise every term anyone searches for becomes another
+ * address holding the same title and description as the list.
+ *
+ * The search keeps `follow`, so a crawler still reads the recipes it links to,
+ * and carries no canonical, because a canonical pointing somewhere else
+ * alongside `noindex` is a contradiction Google warns against.
+ */
+export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
+  const { q } = await searchParams;
+  const query = q?.trim() ?? "";
+
+  if (query) {
+    return { title: `Search: ${query}`, robots: { index: false, follow: true } };
+  }
+
+  return { alternates: { canonical: "/" } };
+}
+
+export default async function RecipesPage({ searchParams }: PageProps) {
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
   const recipes = await listRecipes(query);

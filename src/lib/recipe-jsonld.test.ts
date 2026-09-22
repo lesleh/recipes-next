@@ -1,18 +1,20 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { jsonLdScript, recipeJsonLd } from "./recipe-jsonld";
+import { breadcrumbJsonLd, jsonLdScript, recipeJsonLd } from "./recipe-jsonld";
 
 type Overrides = Partial<Parameters<typeof recipeJsonLd>[0]>;
 
 function recipe(overrides: Overrides = {}) {
   return {
     title: "Pancakes",
+    slug: "pancakes",
     description: null,
     servings: null,
     prepTimeMinutes: null,
     cookTimeMinutes: null,
     instructions: null,
     imageUrl: null,
+    createdAt: new Date("2026-05-28T18:00:00.000Z"),
     updatedAt: new Date("2026-06-04T09:30:00.000Z"),
     ingredients: [],
     ...overrides,
@@ -46,6 +48,7 @@ describe("recipeJsonLd", () => {
       "@context": "https://schema.org",
       "@type": "Recipe",
       name: "Pancakes",
+      author: { "@type": "Person", name: "Leslie Hoare" },
       description: "Thin ones, the way they should be.",
       image: "https://blob.example/recipes/pancakes.jpg",
       recipeYield: "4 servings",
@@ -54,9 +57,18 @@ describe("recipeJsonLd", () => {
       totalTime: "PT30M",
       recipeIngredient: ["200 g plain flour", "2 eggs"],
       recipeInstructions: [
-        { "@type": "HowToStep", text: "Whisk the batter" },
-        { "@type": "HowToStep", text: "Fry the pancakes" },
+        {
+          "@type": "HowToStep",
+          text: "Whisk the batter",
+          url: "https://recipes.example/recipes/pancakes#step-1",
+        },
+        {
+          "@type": "HowToStep",
+          text: "Fry the pancakes",
+          url: "https://recipes.example/recipes/pancakes#step-2",
+        },
       ],
+      datePublished: "2026-05-28T18:00:00.000Z",
       dateModified: "2026-06-04T09:30:00.000Z",
     });
   });
@@ -66,6 +78,8 @@ describe("recipeJsonLd", () => {
       "@context": "https://schema.org",
       "@type": "Recipe",
       name: "Pancakes",
+      author: { "@type": "Person", name: "Leslie Hoare" },
+      datePublished: "2026-05-28T18:00:00.000Z",
       dateModified: "2026-06-04T09:30:00.000Z",
     });
   });
@@ -116,13 +130,34 @@ describe("recipeJsonLd", () => {
     ).toEqual(["salt", "300 ml milk"]);
   });
 
-  it("drops blank lines from the method", () => {
+  it("drops blank lines from the method, and numbers the steps that are left", () => {
+    vi.stubEnv("SITE_URL", "https://recipes.example");
+
     expect(
       recipeJsonLd(recipe({ instructions: "Whisk\n\n  \nFry\n" })).recipeInstructions,
     ).toEqual([
-      { "@type": "HowToStep", text: "Whisk" },
-      { "@type": "HowToStep", text: "Fry" },
+      { "@type": "HowToStep", text: "Whisk", url: "https://recipes.example/recipes/pancakes#step-1" },
+      { "@type": "HowToStep", text: "Fry", url: "https://recipes.example/recipes/pancakes#step-2" },
     ]);
+  });
+});
+
+describe("breadcrumbJsonLd", () => {
+  it("runs from the recipe list to the recipe", () => {
+    vi.stubEnv("SITE_URL", "https://recipes.example");
+
+    expect(breadcrumbJsonLd({ title: "Pancakes" })).toEqual({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Recipes", item: "https://recipes.example/" },
+        { "@type": "ListItem", position: 2, name: "Pancakes" },
+      ],
+    });
+  });
+
+  it("leaves the address off the recipe itself, which is the page being read", () => {
+    expect(breadcrumbJsonLd({ title: "Pancakes" }).itemListElement[1]).not.toHaveProperty("item");
   });
 });
 

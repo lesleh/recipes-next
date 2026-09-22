@@ -1,26 +1,31 @@
 import type { Ingredient, Recipe } from "@/db/schema";
 
 import { ingredientAmount, instructionSteps, pluralize, totalTimeMinutes } from "./format";
-import { absoluteUrl } from "./site";
+import { absoluteUrl, SITE_AUTHOR, SITE_NAME } from "./site";
 
 type RecipeForJsonLd = Pick<
   Recipe,
   | "title"
+  | "slug"
   | "description"
   | "servings"
   | "prepTimeMinutes"
   | "cookTimeMinutes"
   | "instructions"
   | "imageUrl"
+  | "createdAt"
   | "updatedAt"
 > & { ingredients: Pick<Ingredient, "name" | "quantity" | "unit">[] };
 
-type HowToStep = { "@type": "HowToStep"; text: string };
+type HowToStep = { "@type": "HowToStep"; text: string; url: string };
+type Person = { "@type": "Person"; name: string };
+type ListItem = { "@type": "ListItem"; position: number; name: string; item?: string };
 
 export type RecipeJsonLd = {
   "@context": "https://schema.org";
   "@type": "Recipe";
   name: string;
+  author: Person;
   description?: string;
   image?: string;
   recipeYield?: string;
@@ -29,8 +34,18 @@ export type RecipeJsonLd = {
   totalTime?: string;
   recipeIngredient?: string[];
   recipeInstructions?: HowToStep[];
-  dateModified?: string;
+  datePublished: string;
+  dateModified: string;
 };
+
+/**
+ * The address of one step, which is the recipe page plus the anchor the step
+ * carries. Google links a reader straight to a step from a search result, and
+ * has no way to find the step without it.
+ */
+function stepUrl(slug: string, position: number) {
+  return absoluteUrl(`/recipes/${slug}#step-${position}`);
+}
 
 /** Minutes as an ISO 8601 duration, such as 20 minutes to "PT20M". */
 function isoDuration(minutes: number) {
@@ -57,6 +72,9 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
     "@context": "https://schema.org",
     "@type": "Recipe",
     name: recipe.title,
+    // One person writes every recipe here, so the author is the site's rather
+    // than a field on the recipe.
+    author: { "@type": "Person", name: SITE_AUTHOR },
     ...(description ? { description } : {}),
     // Vercel Blob gives back an absolute address already. Only the local
     // fallback under public/uploads needs an origin in front of it.
@@ -69,9 +87,38 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
       ? { recipeIngredient: recipe.ingredients.map(ingredientText) }
       : {}),
     ...(steps.length > 0
-      ? { recipeInstructions: steps.map((text) => ({ "@type": "HowToStep" as const, text })) }
+      ? {
+          recipeInstructions: steps.map((text, index) => ({
+            "@type": "HowToStep" as const,
+            text,
+            url: stepUrl(recipe.slug, index + 1),
+          })),
+        }
       : {}),
+    datePublished: recipe.createdAt.toISOString(),
     dateModified: recipe.updatedAt.toISOString(),
+  };
+}
+
+export type BreadcrumbJsonLd = {
+  "@context": "https://schema.org";
+  "@type": "BreadcrumbList";
+  itemListElement: ListItem[];
+};
+
+/**
+ * The trail from the recipe list to this recipe, matching the one the page
+ * shows. The last item carries no `item`, because it is the page being read
+ * and a search engine reads a self address there as a second, separate page.
+ */
+export function breadcrumbJsonLd(recipe: Pick<Recipe, "title">): BreadcrumbJsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: SITE_NAME, item: absoluteUrl("/") },
+      { "@type": "ListItem", position: 2, name: recipe.title },
+    ],
   };
 }
 
@@ -80,6 +127,6 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
  * holding "</script>" would end the tag early. Its unicode escape means the
  * same string to a JSON reader and nothing to an HTML parser.
  */
-export function jsonLdScript(data: RecipeJsonLd) {
+export function jsonLdScript(data: BreadcrumbJsonLd | RecipeJsonLd) {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }
