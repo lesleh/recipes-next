@@ -163,6 +163,27 @@ domain appears nowhere in the code. It reads, in order:
 already carries one alone. Photos on Vercel Blob are absolute already, so only
 the local fallback under `public/uploads` needs the origin adding.
 
+## Sitemap and robots
+
+`/sitemap.xml` lists the home page and every recipe, from `src/app/sitemap.ts`.
+Each entry carries the date the recipe last changed. The home page takes the
+date of the newest recipe, because saying "now" would claim it changed on every
+fetch.
+
+It reads only the current slug of each recipe, from `recipes`. `recipe_slugs`
+holds every slug a recipe has ever held, and a retired one answers with a
+redirect, which does not belong in a sitemap.
+
+The route is marked `force-dynamic`. A sitemap route is cached by default,
+which has two problems here: the list would still hold the recipes that existed
+when the site was built, and `next build` would need a reachable database to
+render it. One query per crawl is cheaper than either.
+
+`/robots.txt` comes from `src/app/robots.ts`. It allows everything except
+`/recipes/new` and the edit pages, which need the write password and would only
+give a crawler a 401, and it names the sitemap. It needs no database, so it
+stays static.
+
 ## Design
 
 Every colour is a theme token in `src/app/globals.css`. No component writes a

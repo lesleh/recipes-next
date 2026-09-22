@@ -36,6 +36,20 @@ export async function listRecipes(query?: string) {
   });
 }
 
+/**
+ * The current address of every recipe, and when it last changed. The sitemap
+ * needs nothing else, so this skips the ingredients the list page loads.
+ *
+ * Read from `recipes` rather than `recipe_slugs`, because that table holds
+ * every slug a recipe has ever held and a retired one only redirects.
+ */
+export async function listRecipeAddresses() {
+  return db
+    .select({ slug: recipes.slug, updatedAt: recipes.updatedAt })
+    .from(recipes)
+    .orderBy(asc(recipes.slug));
+}
+
 export async function findRecipeBySlug(slug: string) {
   return db.query.recipes.findFirst({
     where: eq(recipes.slug, slug),
