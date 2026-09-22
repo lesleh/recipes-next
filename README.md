@@ -304,6 +304,10 @@ the [Vercel AI Gateway](https://vercel.com/ai-gateway/models), so no provider
 package is installed and adding a model is one line. Only models the gateway
 marks as supporting structured output belong on the list.
 
+One recipe on `google/gemini-3.8-flash`, the default, cost $0.01 when this was
+measured on 22 September 2026. The cheaper models charge about a tenth of that
+for output, which is the reason to try them on the same prompt.
+
 The form sends the chosen model, and `resolveModel` checks it against the same
 list before anything is asked. A form value cannot be trusted even behind a
 password, and an unknown model string would send the spend wherever the sender
