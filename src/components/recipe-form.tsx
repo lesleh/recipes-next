@@ -9,6 +9,7 @@ import {
   type RecipeFormError,
   type RecipeFormState,
 } from "@/app/recipes/actions";
+import { CopyImagePromptButton } from "@/components/copy-image-prompt-button";
 import type { RecipeWithIngredients } from "@/db/schema";
 import { IMAGE_CONTENT_TYPES } from "@/lib/validation";
 
@@ -173,6 +174,17 @@ export function RecipeForm({
         />
         <p className="field__hint">JPEG, PNG or WebP, up to 4MB.</p>
         <FieldError errors={state.errors} field="image" />
+
+        {/* Copies the recipe as saved, not what is typed above, because the
+            photo is generated from a recipe that exists. */}
+        {recipe && (
+          <div className="mt-2">
+            <CopyImagePromptButton recipe={recipe} />
+            <p className="field__hint mt-2">
+              Paste it into Gemini to generate a photo in the same style as the others.
+            </p>
+          </div>
+        )}
 
         {recipe?.imageUrl && (
           <div className="mt-2 flex items-center gap-4">
