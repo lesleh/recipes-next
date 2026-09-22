@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",
+    "@vercel/speed-insights": "^2.0.0",
     "ai": "^7.0.110",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.5",

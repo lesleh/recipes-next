@@ -1,3 +1,4 @@
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -48,6 +49,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* The width cap lives on each page, not here, so the home page can be
             wider than a recipe. */}
         <main className="pt-6 pb-20">{children}</main>
+
+        {/* Reports page timings to Vercel. It does nothing anywhere else, so
+            a local run and a self-hosted one are unaffected. */}
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -11,6 +11,9 @@ importers:
       '@vercel/blob':
         specifier: ^2.8.0
         version: 2.8.0
+      '@vercel/speed-insights':
+        specifier: ^2.0.0
+        version: 2.0.0(next@16.3.5(@babel/core@7.29.7)(@types/node@24.13.6)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       ai:
         specifier: ^7.0.110
         version: 7.0.110(zod@4.6.5)
@@ -1401,6 +1404,32 @@ packages:
   '@vercel/oidc@3.8.8':
     resolution: {integrity: sha512-aeq4/sgVh80zO6j2H+7FRfsG6NOXBrvzV1EEO8IdXPEJgwHIPakP+BFq3QmprsEQ18bIimds07kvaYhm2lehtg==}
     engines: {node: '>= 20'}
+
+  '@vercel/speed-insights@2.0.0':
+    resolution: {integrity: sha512-jwkNcrTeafWxjmWq4AHBaptSqZiJkYU5adLC9QBSqeim0GcqDMgN5Ievh8OG1rJ6W3A4l1oiP7qr9CWxGuzu3w==}
+    peerDependencies:
+      '@sveltejs/kit': ^1 || ^2
+      next: '>= 13'
+      nuxt: '>= 3'
+      react: ^18 || ^19 || ^19.0.0-rc
+      svelte: '>= 4'
+      vue: ^3
+      vue-router: ^4
+    peerDependenciesMeta:
+      '@sveltejs/kit':
+        optional: true
+      next:
+        optional: true
+      nuxt:
+        optional: true
+      react:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
+      vue-router:
+        optional: true
 
   '@vitest/coverage-v8@5.0.1':
     resolution: {integrity: sha512-FRC8ACiudC3dI6MTplzRSYWHDRnIv2IPfbzs4FdoJNsMal/35sWV8hwIfV8ZcqzSPy+uXHeMVONt9CEqtOU17w==}
@@ -4190,6 +4219,11 @@ snapshots:
       '@vercel/cli-config': 0.2.7
       '@vercel/cli-exec': 1.0.1
       jose: 5.10.0
+
+  '@vercel/speed-insights@2.0.0(next@16.3.5(@babel/core@7.29.7)(@types/node@24.13.6)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)':
+    optionalDependencies:
+      next: 16.3.5(@babel/core@7.29.7)(@types/node@24.13.6)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react: 19.2.8
 
   '@vitest/coverage-v8@5.0.1(vitest@5.0.1)':
     dependencies:
