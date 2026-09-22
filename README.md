@@ -130,6 +130,19 @@ slug from its own history.
 Deleting a recipe clears its rows in `recipe_slugs` through the same cascade that
 removes its ingredients, so every slug it held is free for another recipe again.
 
+## Site address
+
+The site origin comes from `siteUrl` in `src/lib/site.ts`, and the production
+domain appears nowhere in the code. It reads, in order:
+
+1. `SITE_URL`, a full address with its scheme, for a self-hosted run.
+2. `VERCEL_PROJECT_PRODUCTION_URL`, which Vercel sets to the project's production domain, with no scheme, on preview deployments too.
+3. `http://localhost:3000`, for local development.
+
+`absoluteUrl` resolves a path against that origin and leaves an address that
+already carries one alone. Photos on Vercel Blob are absolute already, so only
+the local fallback under `public/uploads` needs the origin adding.
+
 ## Design
 
 Every colour is a theme token in `src/app/globals.css`. No component writes a
