@@ -3,66 +3,119 @@
 import { redirect } from "next/navigation";
 
 import { checkSlug, persistRecipe, requireWriteAccess } from "@/app/recipes/save";
-import { MAX_PROMPT_LENGTH, resolveModel } from "@/lib/ai-models";
+import { MAX_CHANGE_LENGTH, MAX_PROMPT_LENGTH, resolveModel } from "@/lib/ai-models";
 import {
   askModelForRecipe,
   describeFailure,
   GATEWAY_KEY_MISSING,
+  generatedRecipeSchema,
   toRecipeInput,
+  type GeneratedRecipe,
 } from "@/lib/recipe-writer";
 import { slugify } from "@/lib/slug";
 import { recipeSchema } from "@/lib/validation";
 
-/** One message, because the page has one field worth pointing at. */
-export type AiRecipeState = { error: string | null };
+/**
+ * The draft in hand, and what went wrong last time. Nothing is written until
+ * the reader presses save, so the draft lives in this state and in nothing
+ * else. It reaches the server through the form state, which makes it as
+ * untrusted as any other form value, so it is parsed again on arrival.
+ */
+export type AiRecipeState = {
+  draft: GeneratedRecipe | null;
+  error: string | null;
+};
+
+/** Which button was pressed. Anything else is treated as a first draft. */
+type Intent = "generate" | "change" | "save";
+
+function text(formData: FormData, key: string) {
+  const value = formData.get(key);
+
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function draftFrom(state: AiRecipeState | undefined) {
+  const parsed = generatedRecipeSchema.safeParse(state?.draft);
+
+  return parsed.success ? parsed.data : null;
+}
 
 export async function writeRecipe(
-  _previousState: AiRecipeState,
+  previousState: AiRecipeState,
   formData: FormData,
 ): Promise<AiRecipeState> {
   await requireWriteAccess();
 
-  if (!process.env.AI_GATEWAY_API_KEY) return { error: GATEWAY_KEY_MISSING };
+  const intent = text(formData, "intent") as Intent;
+  const draft = draftFrom(previousState);
 
-  const prompt = String(formData.get("prompt") ?? "").trim();
+  if (intent === "save") return saveDraft(draft);
 
-  if (prompt === "") return { error: "Say what you would like a recipe for." };
+  if (!process.env.AI_GATEWAY_API_KEY) return { draft, error: GATEWAY_KEY_MISSING };
+
+  const prompt = text(formData, "prompt");
+  const change = intent === "change" ? text(formData, "change") : "";
+
+  if (prompt === "") return { draft, error: "Say what you would like a recipe for." };
 
   if (prompt.length > MAX_PROMPT_LENGTH) {
-    return { error: `Ask for the recipe in ${MAX_PROMPT_LENGTH} characters or fewer.` };
+    return { draft, error: `Ask for the recipe in ${MAX_PROMPT_LENGTH} characters or fewer.` };
   }
 
-  const model = resolveModel(formData.get("model"));
-  let generated;
+  if (intent === "change") {
+    if (!draft) return { draft: null, error: "There is no draft to change yet." };
+
+    if (change === "") return { draft, error: "Say what should change about the draft." };
+
+    if (change.length > MAX_CHANGE_LENGTH) {
+      return { draft, error: `Ask for the change in ${MAX_CHANGE_LENGTH} characters or fewer.` };
+    }
+  }
 
   try {
-    generated = await askModelForRecipe(prompt, model);
+    // A change carries the draft. A first draft carries neither, so the same
+    // call covers both.
+    const written = await askModelForRecipe({
+      prompt,
+      model: resolveModel(formData.get("model")),
+      draft: intent === "change" ? draft : null,
+      change,
+    });
+
+    return { draft: written, error: null };
   } catch (error) {
     // Logged whole, and the first line of it goes to the page. The reasons
     // that happen, a refused key or a model the account cannot reach, are all
     // fixed by the person reading, so hiding them helps nobody.
     console.error("Asking for a recipe failed", error);
 
-    return { error: describeFailure(error) };
+    return { draft, error: describeFailure(error) };
   }
+}
 
-  // The same schema the form goes through, so a model meets the same limits a
-  // person does.
-  const parsed = recipeSchema.safeParse(toRecipeInput(generated));
+/**
+ * The only path that writes. The draft goes through the form's own schema
+ * first, so a model meets the same limits as a person typing.
+ */
+async function saveDraft(draft: GeneratedRecipe | null): Promise<AiRecipeState> {
+  if (!draft) return { draft: null, error: "There is no draft to save yet." };
+
+  const parsed = recipeSchema.safeParse(toRecipeInput(draft));
 
   if (!parsed.success) {
     const reasons = parsed.error.issues.map((issue) => issue.message).join(". ");
 
-    return { error: `The model wrote a recipe this site cannot store. ${reasons}` };
+    return { draft, error: `This draft cannot be stored. ${reasons}` };
   }
 
   const recipe = parsed.data;
   const slug = slugify(recipe.title);
   const slugError = await checkSlug(slug, null);
 
-  // Nothing invents a numbered suffix here either. Say what happened and let
-  // the next prompt ask for something else.
-  if (slugError) return { error: slugError };
+  // Nothing invents a numbered suffix here either. Say what happened, and the
+  // next change can ask for a different title.
+  if (slugError) return { draft, error: slugError };
 
   await persistRecipe({ recipe, slug });
 

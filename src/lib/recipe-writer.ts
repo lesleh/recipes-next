@@ -150,16 +150,56 @@ export function describeFailure(error: unknown) {
 }
 
 /**
- * Ask a model for a recipe. The model is a plain "creator/model-name" string,
- * which routes through the Vercel AI Gateway on `AI_GATEWAY_API_KEY`, so no
- * provider package is installed.
+ * What to send the model: the request on its own for a first draft, or the
+ * draft in hand and what to change about it.
+ *
+ * A change carries the whole draft rather than a conversation, so the server
+ * keeps nothing between rounds and a round costs the same whether it is the
+ * first or the fifth.
  */
-export async function askModelForRecipe(prompt: string, model: RecipeModelId) {
+export function buildPrompt({
+  prompt,
+  draft = null,
+  change = "",
+}: {
+  prompt: string;
+  draft?: GeneratedRecipe | null;
+  change?: string;
+}) {
+  if (!draft || change.trim() === "") return prompt.trim();
+
+  return [
+    `This recipe was written for the request: ${prompt.trim()}`,
+    "",
+    JSON.stringify(draft, null, 2),
+    "",
+    `Change it as follows: ${change.trim()}`,
+    "Return the whole recipe, and leave everything the change does not touch as it is.",
+  ].join("\n");
+}
+
+/**
+ * Ask a model for a recipe, or for a changed version of the draft in hand.
+ * The model is a plain "creator/model-name" string, which routes through the
+ * Vercel AI Gateway on `AI_GATEWAY_API_KEY`, so no provider package is
+ * installed.
+ */
+export async function askModelForRecipe({
+  prompt,
+  model,
+  draft = null,
+  change = "",
+}: {
+  prompt: string;
+  model: RecipeModelId;
+  draft?: GeneratedRecipe | null;
+  change?: string;
+}) {
   const { output } = await generateText({
     model,
     output: Output.object({ schema: generatedRecipeSchema }),
     system: SYSTEM_PROMPT,
-    prompt,
+    prompt: buildPrompt({ prompt, draft, change }),
   });
 
   return output;

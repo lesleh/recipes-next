@@ -4,21 +4,66 @@ import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 
 import { writeRecipe, type AiRecipeState } from "@/app/recipes/new/ai/actions";
-import { DEFAULT_RECIPE_MODEL, MAX_PROMPT_LENGTH, RECIPE_MODELS } from "@/lib/ai-models";
+import { RecipeDraft } from "@/components/recipe-draft";
+import {
+  DEFAULT_RECIPE_MODEL,
+  MAX_CHANGE_LENGTH,
+  MAX_PROMPT_LENGTH,
+  RECIPE_MODELS,
+} from "@/lib/ai-models";
+
+type Intent = "generate" | "change" | "save";
+
+const PENDING_LABEL: Record<Intent, string> = {
+  generate: "Writing the recipe...",
+  change: "Making the change...",
+  save: "Saving...",
+};
+
+function Spinner() {
+  return (
+    <span
+      aria-hidden
+      className="border-current/40 size-4 animate-spin rounded-full border-2 border-t-current motion-reduce:animate-none"
+    />
+  );
+}
 
 export function AiRecipeForm() {
   const [state, formAction, pending] = useActionState<AiRecipeState, FormData>(writeRecipe, {
+    draft: null,
     error: null,
   });
 
   // Controlled, because React resets an uncontrolled form once the action
-  // returns, which would empty the box on a failed generation.
+  // returns, which would empty both boxes on every round.
   const [prompt, setPrompt] = useState("");
+  const [change, setChange] = useState("");
+
+  // Which button was pressed, so the spinner can sit on that one and the
+  // change box knows whether its instruction was carried out.
+  const [intent, setIntent] = useState<Intent>("generate");
+  const lastIntent = useRef<Intent>("generate");
 
   const alert = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    if (state.error) alert.current?.focus();
+    if (state.error) {
+      alert.current?.focus();
+      return;
+    }
+
+    // A change that worked is spent, so the box is ready for the next one.
+    if (lastIntent.current === "change") setChange("");
   }, [state]);
+
+  const press = (next: Intent) => () => {
+    setIntent(next);
+    lastIntent.current = next;
+  };
+
+  const busy = (which: Intent) => pending && intent === which;
+  const draft = state.draft;
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
@@ -29,7 +74,7 @@ export function AiRecipeForm() {
           role="alert"
           className="border-danger bg-danger-soft rounded-surface border-l-4 px-5 py-4"
         >
-          <h2 className="text-danger">No recipe was written</h2>
+          <h2 className="text-danger">{draft ? "The draft was kept" : "No recipe was written"}</h2>
           <p className="text-danger mt-2">{state.error}</p>
         </div>
       )}
@@ -43,12 +88,11 @@ export function AiRecipeForm() {
         <textarea
           id="prompt"
           name="prompt"
-          rows={4}
+          rows={3}
           required
           maxLength={MAX_PROMPT_LENGTH}
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
-          {...(state.error ? { "aria-invalid": true as const } : {})}
         />
       </div>
 
@@ -64,30 +108,92 @@ export function AiRecipeForm() {
         </select>
       </div>
 
-      <div className="border-line flex flex-wrap items-center gap-2 border-t pt-5">
-        <button type="submit" className="button button--primary" disabled={pending}>
-          {pending && (
-            <span
-              aria-hidden
-              className="border-on-accent/40 border-t-on-accent size-4 animate-spin rounded-full border-2 motion-reduce:animate-none"
-            />
-          )}
-          {pending ? "Writing the recipe..." : "Write the recipe"}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="submit"
+          name="intent"
+          value="generate"
+          onClick={press("generate")}
+          disabled={pending}
+          className={draft ? "button" : "button button--primary"}
+        >
+          {busy("generate") && <Spinner />}
+          {busy("generate")
+            ? PENDING_LABEL.generate
+            : draft
+              ? "Start a new draft"
+              : "Write the recipe"}
         </button>
-        <Link href="/recipes/new" className="button button--quiet">
-          Write it myself
-        </Link>
-        <Link href="/" className="button button--quiet sm:ml-auto">
-          Back to recipes
-        </Link>
+
+        {!draft && (
+          <Link href="/recipes/new" className="button button--quiet">
+            Write it myself
+          </Link>
+        )}
       </div>
 
-      {/* The wait runs to tens of seconds, so say so rather than leave a still
-          page. A screen reader hears it when it appears. */}
-      {pending && (
+      {pending && !draft && (
         <p role="status" className="field__hint">
-          This can take up to a minute. The recipe opens as soon as it is saved.
+          This can take up to a minute.
         </p>
+      )}
+
+      {draft && (
+        <>
+          <RecipeDraft draft={draft} />
+
+          <div className="field">
+            <label htmlFor="change">What should change?</label>
+            <p className="field__hint">
+              One instruction at a time works best, such as &ldquo;make it vegan&rdquo; or
+              &ldquo;halve the chilli&rdquo;. The whole recipe is written again.
+            </p>
+            <textarea
+              id="change"
+              name="change"
+              rows={2}
+              maxLength={MAX_CHANGE_LENGTH}
+              value={change}
+              onChange={(event) => setChange(event.target.value)}
+            />
+          </div>
+
+          <div className="border-line flex flex-wrap items-center gap-2 border-t pt-5">
+            <button
+              type="submit"
+              name="intent"
+              value="change"
+              onClick={press("change")}
+              disabled={pending || change.trim() === ""}
+              className="button"
+            >
+              {busy("change") && <Spinner />}
+              {busy("change") ? PENDING_LABEL.change : "Make the change"}
+            </button>
+
+            <button
+              type="submit"
+              name="intent"
+              value="save"
+              onClick={press("save")}
+              disabled={pending}
+              className="button button--primary"
+            >
+              {busy("save") && <Spinner />}
+              {busy("save") ? PENDING_LABEL.save : "Save recipe"}
+            </button>
+
+            <Link href="/" className="button button--quiet sm:ml-auto">
+              Back to recipes
+            </Link>
+          </div>
+
+          {pending && (
+            <p role="status" className="field__hint">
+              {intent === "save" ? "Saving the recipe." : "Writing it again. This takes a moment."}
+            </p>
+          )}
+        </>
       )}
     </form>
   );

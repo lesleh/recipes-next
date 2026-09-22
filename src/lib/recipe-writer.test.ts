@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildPrompt,
   describeFailure,
   generatedRecipeSchema,
   toRecipeInput,
@@ -149,5 +150,30 @@ describe("describeFailure", () => {
     expect(describeFailure("something")).toBe(
       "The model could not write a recipe. Try again, or pick another model.",
     );
+  });
+});
+
+describe("buildPrompt", () => {
+  it("sends the request alone for a first draft", () => {
+    expect(buildPrompt({ prompt: "a weeknight dal" })).toBe("a weeknight dal");
+  });
+
+  it("sends the request alone when there is nothing to change", () => {
+    expect(buildPrompt({ prompt: "a weeknight dal", draft: generated, change: "  " })).toBe(
+      "a weeknight dal",
+    );
+  });
+
+  it("carries the draft and the change together", () => {
+    const text = buildPrompt({
+      prompt: "a weeknight dal",
+      draft: generated,
+      change: "make it vegan",
+    });
+
+    expect(text).toContain("a weeknight dal");
+    expect(text).toContain('"title": "Red lentil dal"');
+    expect(text).toContain("Change it as follows: make it vegan");
+    expect(text).toContain("leave everything the change does not touch as it is");
   });
 });

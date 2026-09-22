@@ -278,20 +278,37 @@ stay open until then.
 
 ## Writing a recipe with AI
 
-`/recipes/new/ai` writes a whole recipe from a sentence. You describe the dish,
-a language model returns it as structured JSON, and the recipe is saved and
-opened for you. There is no review step first: the edit page is already the
-place to fix a wrong quantity.
+`/recipes/new/ai` writes a recipe from a sentence, and then changes it until
+you are happy with it:
+
+1. Describe the dish. A model returns a whole recipe as structured JSON.
+2. Read the draft on the page. Nothing has been written to the database.
+3. Say what should change, such as "make it vegan". The model writes the whole
+   recipe again.
+4. Repeat until it is right, then press save. Only then is anything stored,
+   and the recipe page opens.
+
+The draft lives in the page, in the form state, and nowhere else. Closing the
+tab throws it away. A change sends the draft in hand back with the
+instruction, rather than a conversation, so the server keeps nothing between
+rounds and a fifth round costs what the first one did.
+
+The draft arrives back from the browser like any other form value, so it is
+parsed against the model's schema again on the way in. A draft that fails that
+check is treated as no draft at all.
 
 It sits under `/recipes/new` so that `ai` does not have to be a reserved slug,
 and it needs the same write password as the other write pages. The password is
 checked twice, in `src/proxy.ts` and in the server function, for the reason
 given above.
 
-The page asks for one free-text prompt, capped at 500 characters. Servings and
-dietary needs go in the prompt rather than in fields of their own, because a
-sentence says them better than a form does. The prompt is used and then
-dropped; nothing keeps it after the recipe is saved.
+The request is capped at 500 characters and a change at 300. Servings and
+dietary needs go in the request rather than in fields of their own, because a
+sentence says them better than a form does. Neither is kept once the recipe is
+saved.
+
+The draft is read-only. A typed correction belongs on the edit page, which
+opens as soon as you save.
 
 Photos are not generated. A new recipe has none until you upload one, as
 described in 'Recipe photos' below.
@@ -305,8 +322,10 @@ package is installed and adding a model is one line. Only models the gateway
 marks as supporting structured output belong on the list.
 
 One recipe on `google/gemini-3.8-flash`, the default, cost $0.01 when this was
-measured on 22 September 2026. The cheaper models charge about a tenth of that
-for output, which is the reason to try them on the same prompt.
+measured on 22 September 2026. Every round costs about that, a change as much
+as a first draft, because each one writes the whole recipe. The cheaper models
+charge about a tenth of that for output, which is the reason to try them on
+the same request.
 
 The form sends the chosen model, and `resolveModel` checks it against the same
 list before anything is asked. A form value cannot be trusted even behind a
