@@ -75,12 +75,16 @@ export default async function RecipePage({ params }: PageProps) {
       )}
 
       {recipe.imageUrl && (
+        /* The photo is this page's largest element, so it loads at once and
+           ahead of everything else. `priority` did both until Next 16
+           deprecated it. */
         <Image
           src={recipe.imageUrl}
           alt={recipe.title}
           width={1600}
           height={1067}
-          priority
+          loading="eager"
+          fetchPriority="high"
           sizes="(min-width: 56rem) 56rem, 100vw"
           className="recipe-photo"
         />
