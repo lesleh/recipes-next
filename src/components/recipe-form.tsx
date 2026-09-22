@@ -1,17 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 
-import {
-  saveRecipe,
-  type RecipeFormError,
-  type RecipeFormState,
-} from "@/app/recipes/actions";
-import { CopyImagePromptButton } from "@/components/copy-image-prompt-button";
+import { saveRecipe, type RecipeFormState } from "@/app/recipes/actions";
+import { FieldError, messagesFor } from "@/components/field-error";
+import { PhotoField } from "@/components/photo-field";
 import type { RecipeWithIngredients } from "@/db/schema";
-import { IMAGE_CONTENT_TYPES } from "@/lib/validation";
 
 type IngredientRow = { key: string; quantity: string; unit: string; name: string };
 
@@ -31,21 +26,6 @@ function initialRows(recipe?: RecipeWithIngredients): IngredientRow[] {
     unit: ingredient.unit ?? "",
     name: ingredient.name,
   }));
-}
-
-function messagesFor(errors: RecipeFormError[], field: string) {
-  return errors.filter((error) => error.field === field).map((error) => error.message);
-}
-
-function FieldError({ errors, field }: { errors: RecipeFormError[]; field: string }) {
-  const messages = messagesFor(errors, field);
-  if (messages.length === 0) return null;
-
-  return (
-    <p className="field__error" id={`${field}-error`}>
-      {messages.join(". ")}
-    </p>
-  );
 }
 
 export function RecipeForm({
@@ -162,47 +142,7 @@ export function RecipeForm({
         <FieldError errors={state.errors} field="description" />
       </div>
 
-      <div className="field">
-        <label htmlFor="image">Photo</label>
-        <input
-          id="image"
-          type="file"
-          name="image"
-          accept={IMAGE_CONTENT_TYPES.join(",")}
-          className="file:border-line-strong file:rounded-control file:text-ink file:bg-paper file:mr-3 file:cursor-pointer file:border file:px-4 file:py-2 file:text-base file:font-bold"
-          {...invalid("image")}
-        />
-        <p className="field__hint">JPEG, PNG or WebP, up to 4MB.</p>
-        <FieldError errors={state.errors} field="image" />
-
-        {/* Copies the recipe as saved, not what is typed above, because the
-            photo is generated from a recipe that exists. */}
-        {recipe && (
-          <div className="mt-2">
-            <CopyImagePromptButton recipe={recipe} />
-            <p className="field__hint mt-2">
-              Paste it into Gemini to generate a photo in the same style as the others.
-            </p>
-          </div>
-        )}
-
-        {recipe?.imageUrl && (
-          <div className="mt-2 flex items-center gap-4">
-            <Image
-              src={recipe.imageUrl}
-              alt=""
-              width={192}
-              height={144}
-              sizes="96px"
-              className="rounded-surface h-18 w-24 shrink-0 object-cover"
-            />
-            <label className="flex min-h-11 items-center gap-3 text-base">
-              <input type="checkbox" name="removeImage" />
-              Remove the current photo
-            </label>
-          </div>
-        )}
-      </div>
+      <PhotoField recipe={recipe} errors={state.errors} />
 
       <div className="grid gap-5 sm:grid-cols-3">
         <div className="field">

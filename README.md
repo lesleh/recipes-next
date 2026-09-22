@@ -107,6 +107,12 @@ replaces a recipe's ingredient rows wholesale rather than diffing them.
 Each recipe can carry one photo, rendered through `next/image`, which handles
 resizing.
 
+The form takes one by drop as well as by the file dialog. A drop only sets the
+file input, so the upload is the same multipart post either way. The file is
+checked for type and size as soon as it is chosen, rather than after a failed
+submission, and a photo dropped anywhere else on the page is swallowed, because
+the browser would otherwise leave the form to show the image.
+
 ## Recipe addresses
 
 A recipe is reached at `/recipes/<slug>`, and its numeric id never appears in an
