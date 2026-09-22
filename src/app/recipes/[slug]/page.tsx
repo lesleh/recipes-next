@@ -142,7 +142,10 @@ export default async function RecipePage({ params }: PageProps) {
           {steps.length > 0 ? (
             <ol className="steps mt-4">
               {steps.map((step, index) => (
-                <li key={index} className="step">
+                /* The id is what the structured data's step addresses point
+                   at, so a reader arriving from a search result lands on the
+                   step rather than the top of the page. */
+                <li key={index} id={`step-${index + 1}`} className="step">
                   <span className="step__number" aria-hidden="true">
                     {index + 1}
                   </span>

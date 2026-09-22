@@ -6,6 +6,7 @@ import { absoluteUrl, SITE_AUTHOR, SITE_NAME } from "./site";
 type RecipeForJsonLd = Pick<
   Recipe,
   | "title"
+  | "slug"
   | "description"
   | "servings"
   | "prepTimeMinutes"
@@ -16,7 +17,7 @@ type RecipeForJsonLd = Pick<
   | "updatedAt"
 > & { ingredients: Pick<Ingredient, "name" | "quantity" | "unit">[] };
 
-type HowToStep = { "@type": "HowToStep"; text: string };
+type HowToStep = { "@type": "HowToStep"; text: string; url: string };
 type Person = { "@type": "Person"; name: string };
 type ListItem = { "@type": "ListItem"; position: number; name: string; item?: string };
 
@@ -36,6 +37,15 @@ export type RecipeJsonLd = {
   datePublished: string;
   dateModified: string;
 };
+
+/**
+ * The address of one step, which is the recipe page plus the anchor the step
+ * carries. Google links a reader straight to a step from a search result, and
+ * has no way to find the step without it.
+ */
+function stepUrl(slug: string, position: number) {
+  return absoluteUrl(`/recipes/${slug}#step-${position}`);
+}
 
 /** Minutes as an ISO 8601 duration, such as 20 minutes to "PT20M". */
 function isoDuration(minutes: number) {
@@ -77,7 +87,13 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
       ? { recipeIngredient: recipe.ingredients.map(ingredientText) }
       : {}),
     ...(steps.length > 0
-      ? { recipeInstructions: steps.map((text) => ({ "@type": "HowToStep" as const, text })) }
+      ? {
+          recipeInstructions: steps.map((text, index) => ({
+            "@type": "HowToStep" as const,
+            text,
+            url: stepUrl(recipe.slug, index + 1),
+          })),
+        }
       : {}),
     datePublished: recipe.createdAt.toISOString(),
     dateModified: recipe.updatedAt.toISOString(),

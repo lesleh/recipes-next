@@ -7,6 +7,7 @@ type Overrides = Partial<Parameters<typeof recipeJsonLd>[0]>;
 function recipe(overrides: Overrides = {}) {
   return {
     title: "Pancakes",
+    slug: "pancakes",
     description: null,
     servings: null,
     prepTimeMinutes: null,
@@ -56,8 +57,16 @@ describe("recipeJsonLd", () => {
       totalTime: "PT30M",
       recipeIngredient: ["200 g plain flour", "2 eggs"],
       recipeInstructions: [
-        { "@type": "HowToStep", text: "Whisk the batter" },
-        { "@type": "HowToStep", text: "Fry the pancakes" },
+        {
+          "@type": "HowToStep",
+          text: "Whisk the batter",
+          url: "https://recipes.example/recipes/pancakes#step-1",
+        },
+        {
+          "@type": "HowToStep",
+          text: "Fry the pancakes",
+          url: "https://recipes.example/recipes/pancakes#step-2",
+        },
       ],
       datePublished: "2026-05-28T18:00:00.000Z",
       dateModified: "2026-06-04T09:30:00.000Z",
@@ -121,12 +130,14 @@ describe("recipeJsonLd", () => {
     ).toEqual(["salt", "300 ml milk"]);
   });
 
-  it("drops blank lines from the method", () => {
+  it("drops blank lines from the method, and numbers the steps that are left", () => {
+    vi.stubEnv("SITE_URL", "https://recipes.example");
+
     expect(
       recipeJsonLd(recipe({ instructions: "Whisk\n\n  \nFry\n" })).recipeInstructions,
     ).toEqual([
-      { "@type": "HowToStep", text: "Whisk" },
-      { "@type": "HowToStep", text: "Fry" },
+      { "@type": "HowToStep", text: "Whisk", url: "https://recipes.example/recipes/pancakes#step-1" },
+      { "@type": "HowToStep", text: "Fry", url: "https://recipes.example/recipes/pancakes#step-2" },
     ]);
   });
 });

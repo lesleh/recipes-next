@@ -299,6 +299,9 @@
   .step {
     @apply grid gap-x-3;
     grid-template-columns: 2rem minmax(0, 1fr);
+    /* Each step is its own anchor, so a jump to one leaves a little air above
+       it rather than pinning it to the top edge. */
+    scroll-margin-block-start: 1.5rem;
   }
 
   @media (width >= 40rem) {
