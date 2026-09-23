@@ -13,6 +13,9 @@ type SeedIngredient = { quantity: string; unit: string; name: string };
 type SeedRecipe = {
   title: string;
   description: string;
+  category: string;
+  cuisine: string;
+  keywords: string;
   servings: number;
   prepTimeMinutes: number;
   cookTimeMinutes: number | null;
@@ -25,6 +28,9 @@ const SEED_RECIPES: SeedRecipe[] = [
   {
     title: "Lemon Garlic Roast Chicken",
     description: "A whole chicken roasted with lemon and garlic until the skin crisps.",
+    category: "Main course",
+    cuisine: "British",
+    keywords: "roast chicken, lemon, garlic, Sunday lunch",
     servings: 4,
     prepTimeMinutes: 20,
     cookTimeMinutes: 90,
@@ -47,6 +53,9 @@ const SEED_RECIPES: SeedRecipe[] = [
   {
     title: "Weeknight Tomato Pasta",
     description: "Twenty minutes, one pan, mostly cupboard ingredients.",
+    category: "Main course",
+    cuisine: "Italian",
+    keywords: "pasta, tomato sauce, quick, store cupboard",
     servings: 2,
     prepTimeMinutes: 5,
     cookTimeMinutes: 15,
@@ -68,6 +77,9 @@ const SEED_RECIPES: SeedRecipe[] = [
   {
     title: "Overnight Oats",
     description: "Assemble at night, eat straight from the fridge.",
+    category: "Breakfast",
+    cuisine: "",
+    keywords: "oats, make ahead, no cook, yoghurt",
     servings: 1,
     prepTimeMinutes: 5,
     cookTimeMinutes: null,
@@ -117,6 +129,9 @@ for (const seed of SEED_RECIPES) {
     title: seed.title,
     slug: slugify(seed.title),
     description: seed.description,
+    category: seed.category || null,
+    cuisine: seed.cuisine || null,
+    keywords: seed.keywords || null,
     servings: seed.servings,
     prepTimeMinutes: seed.prepTimeMinutes,
     cookTimeMinutes: seed.cookTimeMinutes,

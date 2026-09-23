@@ -16,6 +16,12 @@ export const recipes = pgTable(
     title: text("title").notNull(),
     slug: text("slug").notNull(),
     description: text("description"),
+    // Three fields search engines ask a recipe for: the course, the cooking
+    // tradition, and other terms for the dish. Keywords are one comma
+    // separated line, which is the form schema.org reads.
+    category: text("category"),
+    cuisine: text("cuisine"),
+    keywords: text("keywords"),
     servings: integer("servings"),
     prepTimeMinutes: integer("prep_time_minutes"),
     cookTimeMinutes: integer("cook_time_minutes"),

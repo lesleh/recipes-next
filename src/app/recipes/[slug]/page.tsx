@@ -52,7 +52,9 @@ export default async function RecipePage({ params }: PageProps) {
   const hasFacts =
     recipe.prepTimeMinutes !== null ||
     recipe.cookTimeMinutes !== null ||
-    recipe.servings !== null;
+    recipe.servings !== null ||
+    recipe.category !== null ||
+    recipe.cuisine !== null;
 
   return (
     <article className="page">
@@ -99,6 +101,18 @@ export default async function RecipePage({ params }: PageProps) {
           {recipe.servings !== null && (
             <span>
               Serves <strong>{recipe.servings}</strong>
+            </span>
+          )}
+          {/* The course and the cuisine are in the structured data, and a
+              search engine discounts data the page itself does not show. */}
+          {recipe.category && (
+            <span>
+              Category <strong>{recipe.category}</strong>
+            </span>
+          )}
+          {recipe.cuisine && (
+            <span>
+              Cuisine <strong>{recipe.cuisine}</strong>
             </span>
           )}
         </p>

@@ -22,6 +22,17 @@ export const generatedRecipeSchema = z.object({
   description: z
     .string()
     .describe("One or two sentences about the dish. Empty if there is nothing worth saying."),
+  category: z.string().describe('The course, such as "Main course", "Dessert" or "Side dish".'),
+  cuisine: z
+    .string()
+    .describe(
+      'The cooking tradition the dish belongs to, such as "Italian" or "Thai". Empty if it belongs to none.',
+    ),
+  keywords: z
+    .string()
+    .describe(
+      "Other terms someone would search for this dish by, separated by commas. Do not repeat the category or the cuisine.",
+    ),
   servings: z.number().int().positive().describe("How many people the recipe serves."),
   prepTimeMinutes: z.number().int().positive().describe("Preparation time in whole minutes."),
   cookTimeMinutes: z.number().int().positive().describe("Cooking time in whole minutes."),
@@ -80,6 +91,9 @@ export function toRecipeInput(generated: GeneratedRecipe): RecipeInput {
   return {
     title: generated.title.trim(),
     description: blankToNull(generated.description),
+    category: blankToNull(generated.category),
+    cuisine: blankToNull(generated.cuisine),
+    keywords: blankToNull(generated.keywords),
     servings: generated.servings,
     prepTimeMinutes: generated.prepTimeMinutes,
     cookTimeMinutes: generated.cookTimeMinutes,

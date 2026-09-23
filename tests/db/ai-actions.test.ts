@@ -23,6 +23,9 @@ const { writeRecipe } = await import("@/app/recipes/new/ai/actions");
 const generated: GeneratedRecipe = {
   title: "Red lentil dal",
   description: "A weeknight dal.",
+  category: "Main course",
+  cuisine: "Indian",
+  keywords: "dal, lentils",
   servings: 4,
   prepTimeMinutes: 10,
   cookTimeMinutes: 25,

@@ -46,6 +46,9 @@ export function RecipeForm({
   const [values, setValues] = useState({
     title: recipe?.title ?? "",
     description: recipe?.description ?? "",
+    category: recipe?.category ?? "",
+    cuisine: recipe?.cuisine ?? "",
+    keywords: recipe?.keywords ?? "",
     servings: recipe?.servings?.toString() ?? "",
     prepTimeMinutes: recipe?.prepTimeMinutes?.toString() ?? "",
     cookTimeMinutes: recipe?.cookTimeMinutes?.toString() ?? "",
@@ -140,6 +143,49 @@ export function RecipeForm({
           {...invalid("description")}
         />
         <FieldError errors={state.errors} field="description" />
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="field">
+          <label htmlFor="category">Category</label>
+          <p className="field__hint">The course, such as Main course or Dessert.</p>
+          <input
+            id="category"
+            name="category"
+            value={values.category}
+            onChange={(event) => setValue("category")(event.target.value)}
+            {...invalid("category")}
+          />
+          <FieldError errors={state.errors} field="category" />
+        </div>
+
+        <div className="field">
+          <label htmlFor="cuisine">Cuisine</label>
+          <p className="field__hint">Where the dish comes from, such as Italian.</p>
+          <input
+            id="cuisine"
+            name="cuisine"
+            value={values.cuisine}
+            onChange={(event) => setValue("cuisine")(event.target.value)}
+            {...invalid("cuisine")}
+          />
+          <FieldError errors={state.errors} field="cuisine" />
+        </div>
+      </div>
+
+      <div className="field">
+        <label htmlFor="keywords">Keywords</label>
+        <p className="field__hint">
+          Other terms for the dish, separated by commas. Leave out the category and the cuisine.
+        </p>
+        <input
+          id="keywords"
+          name="keywords"
+          value={values.keywords}
+          onChange={(event) => setValue("keywords")(event.target.value)}
+          {...invalid("keywords")}
+        />
+        <FieldError errors={state.errors} field="keywords" />
       </div>
 
       <PhotoField recipe={recipe} errors={state.errors} />

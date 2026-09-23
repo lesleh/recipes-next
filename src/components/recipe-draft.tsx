@@ -28,6 +28,16 @@ export function RecipeDraft({ draft }: { draft: GeneratedRecipe }) {
         <span>
           Serves <strong>{draft.servings}</strong>
         </span>
+        {draft.category && (
+          <span>
+            Category <strong>{draft.category}</strong>
+          </span>
+        )}
+        {draft.cuisine && (
+          <span>
+            Cuisine <strong>{draft.cuisine}</strong>
+          </span>
+        )}
       </p>
 
       <div className="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
