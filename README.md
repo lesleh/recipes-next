@@ -96,7 +96,9 @@ sent.
 ## Data model
 
 A recipe has a title, an optional description, servings, prep and cook times in
-minutes, and a method stored as one step per line. It owns many ingredients, each
+minutes, and a method stored as one step per line. It also carries three
+optional fields search engines ask for: a category, which is the course, a
+cuisine, and keywords as one comma separated line. It owns many ingredients, each
 with a name and an optional quantity and unit, kept in an explicit display order.
 Deleting a recipe deletes its ingredients through a foreign key cascade.
 
@@ -140,10 +142,14 @@ removes its ingredients, so every slug it held is free for another recipe again.
 
 A recipe page carries an `application/ld+json` block describing the recipe with
 the schema.org Recipe type, built by `recipeJsonLd` in
-`src/lib/recipe-jsonld.ts`. It holds the title, description, photo, servings,
-times, ingredients and method, and leaves out anything the recipe does not
-have. A field sent empty reads as a field with no value rather than a missing
+`src/lib/recipe-jsonld.ts`. It holds the title, description, photo, category,
+cuisine, keywords, servings, times, ingredients and method, and leaves out
+anything the recipe does not have. A field sent empty reads as a field with no value rather than a missing
 one.
+
+The category and the cuisine are shown on the recipe page as well as sent in
+the block, because a search engine discounts data the page itself does not
+show. Keywords go in the block alone, which is where they belong.
 
 Times are ISO 8601 durations in minutes, such as `PT20M`. `totalTime` is prep
 plus cook, and appears when either is set.

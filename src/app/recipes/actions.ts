@@ -25,6 +25,9 @@ export type { RecipeFormError, RecipeFormState } from "./save";
 const FORM_FIELDS = new Set([
   "title",
   "description",
+  "category",
+  "cuisine",
+  "keywords",
   "servings",
   "prepTimeMinutes",
   "cookTimeMinutes",
@@ -71,6 +74,9 @@ export async function saveRecipe(
   const parsed = recipeSchema.safeParse({
     title: text(formData, "title"),
     description: text(formData, "description"),
+    category: text(formData, "category"),
+    cuisine: text(formData, "cuisine"),
+    keywords: text(formData, "keywords"),
     servings: text(formData, "servings"),
     prepTimeMinutes: text(formData, "prepTimeMinutes"),
     cookTimeMinutes: text(formData, "cookTimeMinutes"),

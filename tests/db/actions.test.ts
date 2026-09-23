@@ -61,6 +61,34 @@ describe("saveRecipe creating a recipe", () => {
     expect(recipe.slug).toBe("chocolate-cake");
   });
 
+  it("stores the course, the cuisine and the keywords", async () => {
+    await captureRedirect(() =>
+      save(
+        recipeForm({
+          category: "Dessert",
+          cuisine: "French",
+          keywords: "tart, apples",
+        }),
+      ),
+    );
+
+    const [recipe] = await db.select().from(recipes);
+
+    expect(recipe).toMatchObject({
+      category: "Dessert",
+      cuisine: "French",
+      keywords: "tart, apples",
+    });
+  });
+
+  it("stores a blank course, cuisine and keywords as nothing at all", async () => {
+    await captureRedirect(() => save(recipeForm()));
+
+    const [recipe] = await db.select().from(recipes);
+
+    expect(recipe).toMatchObject({ category: null, cuisine: null, keywords: null });
+  });
+
   it("records the slug in the history, so the address survives a rename", async () => {
     await captureRedirect(() => save(recipeForm({ title: "Bread" })));
 

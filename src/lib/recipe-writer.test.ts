@@ -12,6 +12,9 @@ import { recipeSchema } from "./validation";
 const generated: GeneratedRecipe = {
   title: "Red lentil dal",
   description: "A weeknight dal.",
+  category: "Main course",
+  cuisine: "Indian",
+  keywords: "dal, lentils, weeknight",
   servings: 4,
   prepTimeMinutes: 10,
   cookTimeMinutes: 25,
@@ -33,10 +36,21 @@ describe("toRecipeInput", () => {
     expect(recipe.cookTimeMinutes).toBe(25);
   });
 
+  it("carries the course, the cuisine and the keywords across", () => {
+    const recipe = toRecipeInput(generated);
+
+    expect(recipe).toMatchObject({
+      category: "Main course",
+      cuisine: "Indian",
+      keywords: "dal, lentils, weeknight",
+    });
+  });
+
   it("reads an empty string as no value", () => {
-    const recipe = toRecipeInput({ ...generated, description: "   " });
+    const recipe = toRecipeInput({ ...generated, description: "   ", cuisine: "" });
 
     expect(recipe.description).toBeNull();
+    expect(recipe.cuisine).toBeNull();
     expect(recipe.ingredients[1]).toEqual({ name: "Salt", quantity: null, unit: null });
   });
 

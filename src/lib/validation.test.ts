@@ -19,6 +19,9 @@ function imageFile({ type, size = 1024 }: { type: string; size?: number }) {
 const valid = {
   title: "Chocolate Cake",
   description: "",
+  category: "",
+  cuisine: "",
+  keywords: "",
   servings: "",
   prepTimeMinutes: "",
   cookTimeMinutes: "",
@@ -69,6 +72,25 @@ describe("recipeSchema", () => {
     for (const servings of ["0", "-1", "1.5"]) {
       expect(recipeSchema.safeParse({ ...valid, servings }).success).toBe(false);
     }
+  });
+
+  it("keeps the course, the cuisine and the keywords as typed", () => {
+    const result = recipeSchema.parse({
+      ...valid,
+      category: " Main course ",
+      cuisine: "Italian",
+      keywords: "pasta, quick",
+    });
+
+    expect(result).toMatchObject({
+      category: "Main course",
+      cuisine: "Italian",
+      keywords: "pasta, quick",
+    });
+  });
+
+  it("refuses keywords over 300 characters", () => {
+    expect(recipeSchema.safeParse({ ...valid, keywords: "a".repeat(301) }).success).toBe(false);
   });
 
   it("points an error at the field it belongs to", () => {

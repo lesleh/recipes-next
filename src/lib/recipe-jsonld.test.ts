@@ -9,6 +9,9 @@ function recipe(overrides: Overrides = {}) {
     title: "Pancakes",
     slug: "pancakes",
     description: null,
+    category: null,
+    cuisine: null,
+    keywords: null,
     servings: null,
     prepTimeMinutes: null,
     cookTimeMinutes: null,
@@ -33,6 +36,9 @@ describe("recipeJsonLd", () => {
       recipeJsonLd(
         recipe({
           description: "Thin ones, the way they should be.",
+          category: "Breakfast",
+          cuisine: "British",
+          keywords: "pancakes, batter",
           servings: 4,
           prepTimeMinutes: 20,
           cookTimeMinutes: 10,
@@ -51,6 +57,9 @@ describe("recipeJsonLd", () => {
       author: { "@type": "Person", name: "Leslie Hoare" },
       description: "Thin ones, the way they should be.",
       image: "https://blob.example/recipes/pancakes.jpg",
+      recipeCategory: "Breakfast",
+      recipeCuisine: "British",
+      keywords: "pancakes, batter",
       recipeYield: "4 servings",
       prepTime: "PT20M",
       cookTime: "PT10M",
@@ -86,6 +95,16 @@ describe("recipeJsonLd", () => {
 
   it("leaves out a description that is only spaces", () => {
     expect(recipeJsonLd(recipe({ description: "   " }))).not.toHaveProperty("description");
+  });
+
+  it("tidies the spacing between keywords and drops an empty one", () => {
+    expect(recipeJsonLd(recipe({ keywords: " pancakes ,,batter , brunch " })).keywords).toBe(
+      "pancakes, batter, brunch",
+    );
+  });
+
+  it("leaves out keywords that are only commas", () => {
+    expect(recipeJsonLd(recipe({ keywords: " , , " }))).not.toHaveProperty("keywords");
   });
 
   it("says one serving in the singular", () => {

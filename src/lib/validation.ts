@@ -32,6 +32,9 @@ export const ingredientSchema = z.object({
 export const recipeSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(200),
   description: optionalText(2000),
+  category: optionalText(100),
+  cuisine: optionalText(100),
+  keywords: optionalText(300),
   servings: optionalPositiveInt,
   prepTimeMinutes: optionalPositiveInt,
   cookTimeMinutes: optionalPositiveInt,
