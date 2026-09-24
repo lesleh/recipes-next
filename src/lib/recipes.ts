@@ -20,6 +20,16 @@ function matchesIngredient(pattern: string) {
   );
 }
 
+function carriesTag(slug: string) {
+  return exists(
+    db
+      .select({ found: sql`1` })
+      .from(recipeTags)
+      .innerJoin(tags, eq(tags.id, recipeTags.tagId))
+      .where(and(eq(recipeTags.recipeId, recipes.id), eq(tags.slug, slug))),
+  );
+}
+
 /**
  * The join rows flattened to the tags themselves, in slug order.
  *
@@ -31,18 +41,27 @@ function tagsOf(joins: { tag: Tag }[]) {
   return joins.map((join) => join.tag).sort(bySlug);
 }
 
-export async function listRecipes(query?: string) {
-  const term = query?.trim();
+/**
+ * The recipe list, filtered by a search term, a tag, or both together. A
+ * search inside a tag returns the recipes matching both.
+ */
+export async function listRecipes({ query = "", tag = "" }: { query?: string; tag?: string } = {}) {
+  const term = query.trim();
   const pattern = term ? likePattern(term) : null;
 
-  const rows = await db.query.recipes.findMany({
-    where: pattern
+  const filters = [
+    pattern
       ? or(
           ilike(recipes.title, pattern),
           ilike(recipes.description, pattern),
           matchesIngredient(pattern),
         )
       : undefined,
+    tag ? carriesTag(tag) : undefined,
+  ].filter((filter) => filter !== undefined);
+
+  const rows = await db.query.recipes.findMany({
+    where: filters.length > 0 ? and(...filters) : undefined,
     with: {
       ingredients: { orderBy: [asc(ingredients.position), asc(ingredients.id)] },
       tags: { with: { tag: true } },

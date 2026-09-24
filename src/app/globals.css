@@ -345,6 +345,30 @@
     @apply border-line-strong text-ink;
   }
 
+  /* The sidebar's own row, which is a whole line rather than a pill, so it
+     carries the full 44px tap target. */
+  .tag-row {
+    @apply text-ink flex items-center justify-between gap-3 px-2 py-2 text-base no-underline;
+    min-height: 2.75rem;
+  }
+
+  .tag-row:hover {
+    @apply bg-accent-soft;
+  }
+
+  .tag-row[aria-current] {
+    @apply bg-accent text-on-accent font-semibold;
+  }
+
+  .tag-row__count {
+    @apply text-ink-soft text-sm;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tag-row[aria-current] .tag-row__count {
+    @apply text-on-accent;
+  }
+
   /* A recipe with nothing in a section still has to look finished. */
   .empty {
     @apply border-line text-ink-soft rounded-surface border border-dashed px-4 py-5 text-base;

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { TagList } from "@/components/tag-list";
 import type { RecipeListItem } from "@/lib/recipes";
 import { pluralize, totalTimeMinutes, truncate } from "@/lib/format";
 
@@ -51,7 +52,11 @@ export function RecipeCard({ recipe }: { recipe: RecipeListItem }) {
             <span>{pluralize(recipe.ingredients.length, "ingredient")}</span>
           </p>
 
-          {/* #14 adds the tag links below the meta row, where they wrap. */}
+          {recipe.tags.length > 0 && (
+            <div className="mt-2">
+              <TagList tags={recipe.tags} label={`Tags for ${recipe.title}`} />
+            </div>
+          )}
         </div>
       </article>
     </li>

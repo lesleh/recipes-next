@@ -20,14 +20,14 @@ describe("listRecipes", () => {
   it("gives every recipe when the term is blank", async () => {
     await createRecipe({ title: "Bread" });
 
-    expect(await listRecipes("   ")).toHaveLength(1);
+    expect(await listRecipes({ query: "   " })).toHaveLength(1);
   });
 
   it("matches the title, whatever the case", async () => {
     await createRecipe({ title: "Chocolate Cake" });
     await createRecipe({ title: "Bread" });
 
-    const found = await listRecipes("chocolate");
+    const found = await listRecipes({ query: "chocolate" });
 
     expect(found.map((recipe) => recipe.title)).toEqual(["Chocolate Cake"]);
   });
@@ -35,14 +35,14 @@ describe("listRecipes", () => {
   it("matches the description", async () => {
     await createRecipe({ title: "Bread", description: "A slow overnight rise" });
 
-    expect(await listRecipes("overnight")).toHaveLength(1);
+    expect(await listRecipes({ query: "overnight" })).toHaveLength(1);
   });
 
   it("matches an ingredient name", async () => {
     await createRecipe({ title: "Bread", ingredients: [{ name: "Strong white flour" }] });
     await createRecipe({ title: "Salad" });
 
-    const found = await listRecipes("flour");
+    const found = await listRecipes({ query: "flour" });
 
     expect(found.map((recipe) => recipe.title)).toEqual(["Bread"]);
   });
@@ -53,13 +53,13 @@ describe("listRecipes", () => {
       ingredients: [{ name: "White flour" }, { name: "Rye flour" }],
     });
 
-    expect(await listRecipes("flour")).toHaveLength(1);
+    expect(await listRecipes({ query: "flour" })).toHaveLength(1);
   });
 
   it("gives nothing when the term matches nothing", async () => {
     await createRecipe({ title: "Bread" });
 
-    expect(await listRecipes("pineapple")).toEqual([]);
+    expect(await listRecipes({ query: "pineapple" })).toEqual([]);
   });
 
   // Without escaping, a term holding % or _ would match far more than it says.
@@ -67,10 +67,10 @@ describe("listRecipes", () => {
     await createRecipe({ title: "100% rye bread" });
     await createRecipe({ title: "Pancakes" });
 
-    expect((await listRecipes("100%")).map((recipe) => recipe.title)).toEqual(["100% rye bread"]);
+    expect((await listRecipes({ query: "100%" })).map((recipe) => recipe.title)).toEqual(["100% rye bread"]);
     // A bare wildcard finds the title holding that character, not everything.
-    expect((await listRecipes("%")).map((recipe) => recipe.title)).toEqual(["100% rye bread"]);
-    expect(await listRecipes("_")).toEqual([]);
+    expect((await listRecipes({ query: "%" })).map((recipe) => recipe.title)).toEqual(["100% rye bread"]);
+    expect(await listRecipes({ query: "_" })).toEqual([]);
   });
 
   it("gives a recipe's tags in slug order, whatever case they were typed in", async () => {
@@ -79,6 +79,37 @@ describe("listRecipes", () => {
     const [recipe] = await listRecipes();
 
     expect(recipe.tags.map((tag) => tag.name)).toEqual(["apple", "Baking", "Weeknight"]);
+  });
+
+  it("gives only the recipes carrying the chosen tag", async () => {
+    await createRecipe({ title: "Bread", tags: ["baking"] });
+    await createRecipe({ title: "Salad", tags: ["quick"] });
+
+    const found = await listRecipes({ tag: "baking" });
+
+    expect(found.map((recipe) => recipe.title)).toEqual(["Bread"]);
+  });
+
+  it("gives a recipe once however many of its tags were asked for", async () => {
+    await createRecipe({ title: "Bread", tags: ["baking", "weeknight"] });
+
+    expect(await listRecipes({ tag: "baking" })).toHaveLength(1);
+  });
+
+  it("applies a search and a tag together", async () => {
+    await createRecipe({ title: "Bread", tags: ["baking"] });
+    await createRecipe({ title: "Brioche", tags: ["baking"] });
+    await createRecipe({ title: "Bread sauce", tags: ["quick"] });
+
+    const found = await listRecipes({ query: "bread", tag: "baking" });
+
+    expect(found.map((recipe) => recipe.title)).toEqual(["Bread"]);
+  });
+
+  it("gives nothing for a tag no recipe carries", async () => {
+    await createRecipe({ title: "Bread", tags: ["baking"] });
+
+    expect(await listRecipes({ tag: "nonsense" })).toEqual([]);
   });
 
   it("gives the ingredients in their stored order", async () => {
