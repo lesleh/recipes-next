@@ -96,11 +96,16 @@ sent.
 ## Data model
 
 A recipe has a title, an optional description, servings, prep and cook times in
-minutes, and a method stored as one step per line. It also carries three
-optional fields search engines ask for: a category, which is the course, a
-cuisine, and keywords as one comma separated line. It owns many ingredients, each
-with a name and an optional quantity and unit, kept in an explicit display order.
-Deleting a recipe deletes its ingredients through a foreign key cascade.
+minutes, and a method stored as one step per line. It also carries two optional
+fields search engines ask for: a category, which is the course, and a cuisine.
+It owns many ingredients, each with a name and an optional quantity and unit,
+kept in an explicit display order. Deleting a recipe deletes its ingredients
+through a foreign key cascade.
+
+A recipe also carries tags, which are the other terms search engines ask for
+and the only way to browse the collection. They are two tables: `tags`, which
+a recipe does not own, and `recipe_tags`, joining the two. Tagging is described
+under [Tags](#tags).
 
 Ingredients are edited inline on the recipe form, which holds the rows in React state
 and submits them as JSON. Because the form always posts the complete list, saving
@@ -138,6 +143,39 @@ slug from its own history.
 Deleting a recipe clears its rows in `recipe_slugs` through the same cascade that
 removes its ingredients, so every slug it held is free for another recipe again.
 
+## Tags
+
+A tag has a name and a slug, built by the same `slugify` the recipe address
+uses. Two tags are the same tag when their slugs match, so `Weeknight` and
+`weeknight` are one row. That row keeps the name it was first given, and that
+is the name every page shows. A space is a separator like any other, so
+`week night` is a different tag from `weeknight`.
+
+Tags are typed into one comma separated field on the recipe form. The action
+reads every value submitted under that name, not just the first, so a picker
+sending one value per tag would need no change on the server. Saving replaces
+a recipe's tags wholesale, the same way it replaces the ingredient rows.
+
+A tag belongs to nobody, so nothing would delete one on its own. Every save and
+every recipe delete removes any tag no recipe carries any more, which is what
+keeps the sidebar from offering a tag that leads to an empty list.
+
+A recipe carries at most 10 tags, each at most 50 characters. A name repeated
+in one submission counts once, and a name that leaves no slug at all is
+dropped rather than refused, as a blank ingredient row is.
+
+Wherever tags are shown they are in slug order. Ordering by name would depend
+on the database collation, which differs between a local Postgres and
+production, and would put `Weeknight` before `apple` on one and after it on the
+other.
+
+The home page lists every tag in use in a sidebar, with the number of recipes
+against each, ordered by that number and then by slug. Choosing one adds
+`?tag=<slug>` to the address, beside the `?q=` the search uses, and the two
+apply together. Both are links and a GET form, so neither needs JavaScript. The
+page is wider than the rest of the site to make room for the sidebar, and drops
+back to one column when no recipe carries a tag.
+
 ## Search engine data
 
 A recipe page carries an `application/ld+json` block describing the recipe with
@@ -147,9 +185,10 @@ cuisine, keywords, servings, times, ingredients and method, and leaves out
 anything the recipe does not have. A field sent empty reads as a field with no value rather than a missing
 one.
 
-The category and the cuisine are shown on the recipe page as well as sent in
-the block, because a search engine discounts data the page itself does not
-show. Keywords go in the block alone, which is where they belong.
+The keywords are the recipe's tags, joined into the one comma separated line
+schema.org reads. The category, the cuisine and the tags are all shown on the
+recipe page as well as sent in the block, because a search engine discounts
+data the page itself does not show.
 
 Times are ISO 8601 durations in minutes, such as `PT20M`. `totalTime` is prep
 plus cook, and appears when either is set.
@@ -217,11 +256,11 @@ Latin text never requests.
 There are two container widths, both tokens:
 
 - `--container-page`, 56rem, used by a recipe, the new form and the edit form
-- `--container-wide`, 76rem, defined for the two-column home page in #14
+- `--container-wide`, 76rem, used by the two-column home page
 
 `main` in `src/app/layout.tsx` no longer caps the width. Each page applies the
-`.page` class, and the home page will add `.page--wide` when the tag sidebar
-arrives.
+`.page` class, and the home page adds `.page--wide` when it has a tag sidebar
+to show.
 
 Ingredients are a table with a fixed quantity column and a rule under each row.
 The method is a list with the step number hanging in the left margin. The two
