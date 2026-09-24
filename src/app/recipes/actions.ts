@@ -7,11 +7,13 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { recipeSlugs, recipes } from "@/db/schema";
 import { deleteOrphanTags } from "@/lib/recipe-tags";
+import { describeFailure } from "@/lib/recipe-writer";
 import { slugify } from "@/lib/slug";
 import { parseTags } from "@/lib/tags";
 import { removeImage, storeImage } from "@/lib/storage";
 import { recipeSchema, validateImage } from "@/lib/validation";
 
+import { DRAWING_KEY_MISSING, illustrateRecipe } from "./illustrate";
 import {
   checkSlug,
   persistRecipe,
@@ -174,4 +176,33 @@ export async function deleteRecipe(formData: FormData) {
   }
 
   redirect("/");
+}
+
+export type IllustrationState = { error: string | null };
+
+/**
+ * The edit page's button, and the only way an existing recipe gets a new
+ * drawing. It saves the drawing and nothing else, so unsaved changes on the
+ * form are neither saved nor lost.
+ */
+export async function drawIllustration(
+  _previousState: IllustrationState,
+  formData: FormData,
+): Promise<IllustrationState> {
+  await requireWriteAccess();
+
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return { error: "There is no recipe to draw." };
+
+  if (!process.env.AI_GATEWAY_API_KEY) return { error: DRAWING_KEY_MISSING };
+
+  try {
+    const drawn = await illustrateRecipe(id);
+
+    return drawn ? { error: null } : { error: "This recipe no longer exists." };
+  } catch (error) {
+    console.error(`Drawing recipe ${id} failed`, error);
+
+    return { error: describeFailure(error, "draw an illustration") };
+  }
 }

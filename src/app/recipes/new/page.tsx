@@ -4,6 +4,9 @@ import { RecipeForm } from "@/components/recipe-form";
 
 export const metadata = { title: "New recipe" };
 
+/** Saving draws the recipe's illustration afterwards, inside this limit. */
+export const maxDuration = 120;
+
 export default function NewRecipePage() {
   return (
     <div className="page">

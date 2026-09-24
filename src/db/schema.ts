@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   serial,
@@ -28,6 +29,10 @@ export const recipes = pgTable(
     // Vercel Blob returns both; the pathname is what we need to delete the file.
     imageUrl: text("image_url"),
     imagePathname: text("image_pathname"),
+    // The cut-paper drawing, as pieces rather than markup. Read it through
+    // readIllustration, which parses it again rather than trusting the column.
+    illustration: jsonb("illustration"),
+    illustratedAt: timestamp("illustrated_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

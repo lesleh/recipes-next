@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { RecipeCard } from "@/components/recipe-card";
+import { RecipeIllustration } from "@/components/recipe-illustration";
 import { TagSidebar } from "@/components/tag-sidebar";
+import { HOME_ILLUSTRATION } from "@/lib/illustration-examples";
 import { findTagName, listRecipes, listTags } from "@/lib/recipes";
 import { tagHref } from "@/lib/tags";
 
@@ -67,7 +69,7 @@ export default async function RecipesPage({ searchParams }: PageProps) {
   const hasSidebar = tags.length > 0;
 
   return (
-    <div className={hasSidebar ? "page page--wide" : "page"}>
+    <div className={hasSidebar ? "page page--wide page--art" : "page page--art"}>
       <h1>Recipes</h1>
 
       <div className="mt-5 grid gap-x-10 gap-y-10 lg:grid-cols-[minmax(0,1fr)_17rem]">
@@ -116,6 +118,8 @@ export default async function RecipesPage({ searchParams }: PageProps) {
 
         {hasSidebar && <TagSidebar tags={tags} chosen={chosen} query={query} />}
       </div>
+
+      <RecipeIllustration illustration={HOME_ILLUSTRATION} seed="home" className="art-corner" />
     </div>
   );
 }

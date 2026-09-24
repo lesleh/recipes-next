@@ -3,8 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
+import { RecipeIllustration } from "@/components/recipe-illustration";
 import { TagList } from "@/components/tag-list";
 import { ingredientAmount, instructionSteps, truncate } from "@/lib/format";
+import { readIllustration } from "@/lib/illustration";
 import { breadcrumbJsonLd, jsonLdScript, recipeJsonLd } from "@/lib/recipe-jsonld";
 import { findRecipeBySlug, listRecipeAddresses } from "@/lib/recipes";
 import { SITE_NAME } from "@/lib/site";
@@ -58,7 +60,7 @@ export default async function RecipePage({ params }: PageProps) {
     recipe.cuisine !== null;
 
   return (
-    <article className="page">
+    <article className="page page--art">
       {/* Structured data for search engines. A native script tag, because this
           is data rather than code for the browser to run. */}
       <script
@@ -84,7 +86,7 @@ export default async function RecipePage({ params }: PageProps) {
       <h1 className="mt-2">{recipe.title}</h1>
 
       {recipe.description && (
-        <p className="text-ink-soft mt-3 max-w-[58ch] text-lg">{recipe.description}</p>
+        <p className="text-ink mt-3 max-w-[58ch] text-lg">{recipe.description}</p>
       )}
 
       {hasFacts && (
@@ -192,6 +194,13 @@ export default async function RecipePage({ params }: PageProps) {
           Back to recipes
         </Link>
       </div>
+
+      {/* Until a recipe has a drawing, the pale paper shows on its own. */}
+      <RecipeIllustration
+        illustration={readIllustration(recipe.illustration)}
+        seed={recipe.slug}
+        className="art-corner"
+      />
     </article>
   );
 }

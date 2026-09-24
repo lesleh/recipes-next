@@ -47,6 +47,16 @@ vi.mock("next/cache", () => ({
   },
 }));
 
+/** Work handed to `after`, held so a test can see it was scheduled and run it. */
+export const scheduled: Array<() => unknown> = [];
+
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: (task: () => unknown) => {
+    scheduled.push(task);
+  },
+}));
+
 vi.mock("next/navigation", () => ({
   redirect: (destination: string) => {
     throw new RedirectError(destination);
@@ -72,6 +82,7 @@ vi.mock("@/lib/storage", () => ({ storeImage, removeImage }));
 
 beforeEach(() => {
   revalidated.length = 0;
+  scheduled.length = 0;
   storeImage.mockClear();
   removeImage.mockClear();
   signIn(process.env.RECIPES_WRITE_PASSWORD ?? "");

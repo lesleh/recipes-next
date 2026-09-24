@@ -47,7 +47,40 @@
   --radius-surface: 0.25rem;
 }
 
+
+/*
+ * The cut-paper drawings. Muted, and faded again by --art-opacity, so text
+ * scrolling over them stays readable. Static, because the drawings read them
+ * by name from SVG attributes, where Tailwind cannot see them used.
+ */
+@theme static {
+  --color-art-tomato: #c9604b;
+  --color-art-tomato-light: #de8a74;
+  --color-art-leaf: #4f7f60;
+  --color-art-leaf-dark: #3c5e48;
+  --color-art-leaf-light: #6a9a78;
+  --color-art-lemon: #dcc45e;
+  --color-art-lemon-dark: #c9ae4e;
+  --color-art-lemon-light: #e6d16e;
+  --color-art-pith: #f6f0d8;
+  --color-art-plum: #5a4270;
+  --color-art-plum-light: #7c6494;
+  --color-art-lime: #8fa559;
+  --color-art-ultramarine: #4a5a9e;
+  --color-art-pink: #e3afbd;
+  --color-art-ground-blue: #e1e6ef;
+  --color-art-ground-pink: #f2e4e7;
+  --color-art-ground-green: #e0e9e1;
+}
+
 @layer base {
+  :root {
+    /* The main ink passes AA over every piece up to 63%, the step numbers up
+       to 59%. Nothing in soft ink sits where a drawing can reach. */
+    --art-opacity: 0.55;
+    --art-size: clamp(180px, 28vw, 360px);
+  }
+
   /* The width axis is what makes Archivo a display face here rather than
      another grotesque. */
   h1,
@@ -156,8 +189,10 @@
     @apply bg-ink border-ink;
   }
 
+  /* Paper rather than transparent, so a drawing behind never shows through
+     the text. The accent fails AA over the darker pieces. */
   .button--quiet {
-    @apply text-accent border-transparent bg-transparent;
+    @apply text-accent bg-paper border-transparent;
   }
 
   .button--quiet:hover {
@@ -165,7 +200,7 @@
   }
 
   .button--danger {
-    @apply text-danger border-transparent bg-transparent;
+    @apply text-danger bg-paper border-transparent;
   }
 
   .button--danger:hover {
@@ -195,9 +230,10 @@
     @apply text-danger text-sm font-bold;
   }
 
-  /* Times, servings and counts. Set apart from the prose, never as a heading. */
+  /* Times, servings and counts. Set apart from the prose, never as a heading.
+     Main ink, because it scrolls over the drawings. */
   .meta {
-    @apply text-ink-soft flex flex-wrap gap-x-5 gap-y-1 text-sm;
+    @apply text-ink flex flex-wrap gap-x-5 gap-y-1 text-sm;
   }
 
   .meta strong {
@@ -210,12 +246,16 @@
   /* The trail above the title. Quiet by design: it says where you are and
      leaves the h1 under it as the loud thing. */
   .breadcrumb {
-    @apply text-ink-soft m-0 flex list-none flex-wrap items-center gap-x-2 gap-y-1 p-0 text-sm;
+    @apply text-ink m-0 flex list-none flex-wrap items-center gap-x-2 gap-y-1 p-0 text-sm;
   }
 
   .breadcrumb li + li::before {
     content: "/";
     @apply text-ink-faint mr-2;
+  }
+
+  .breadcrumb a {
+    @apply text-ink;
   }
 
   .breadcrumb [aria-current="page"] {
@@ -360,8 +400,9 @@
     @apply bg-accent text-on-accent font-semibold;
   }
 
+  /* Main ink, because the sidebar sits over the corner drawing. */
   .tag-row__count {
-    @apply text-ink-soft text-sm;
+    @apply text-ink text-sm;
     font-variant-numeric: tabular-nums;
   }
 
@@ -371,7 +412,25 @@
 
   /* A recipe with nothing in a section still has to look finished. */
   .empty {
-    @apply border-line text-ink-soft rounded-surface border border-dashed px-4 py-5 text-base;
+    @apply border-line text-ink-soft bg-paper rounded-surface border border-dashed px-4 py-5 text-base;
+  }
+
+  /*
+   * The page's drawing, pinned to the bottom-right corner at every width. The
+   * text is left-aligned, so the right edge carries the least of it. Behind
+   * the content, and never in the way of a tap.
+   */
+  .art-corner {
+    @apply pointer-events-none fixed right-0;
+    bottom: env(safe-area-inset-bottom, 0);
+    width: var(--art-size);
+    height: var(--art-size);
+    z-index: -1;
+  }
+
+  /* Room to scroll the last of the page clear of the drawing. */
+  .page--art {
+    padding-bottom: var(--art-size);
   }
 }
 
@@ -402,7 +461,8 @@
   }
 
   .print-hide,
-  .recipe-photo {
+  .recipe-photo,
+  .art-corner {
     display: none !important;
   }
 
