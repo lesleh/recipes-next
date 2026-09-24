@@ -176,6 +176,12 @@ apply together. Both are links and a GET form, so neither needs JavaScript. The
 page is wider than the rest of the site to make room for the sidebar, and drops
 back to one column when no recipe carries a tag.
 
+A tag address is a page in its own right. It is indexed, it calls itself its
+own canonical, and the sitemap lists it, dated from the newest recipe carrying
+it. A search is not, and neither is a search inside a tag: see
+[Search engine data](#search-engine-data). A tag no recipe carries would be an
+empty page, so that one is left out of the index as a search is.
+
 ## Search engine data
 
 A recipe page carries an `application/ld+json` block describing the recipe with

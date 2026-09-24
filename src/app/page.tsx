@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { RecipeCard } from "@/components/recipe-card";
 import { TagSidebar } from "@/components/tag-sidebar";
-import { listRecipes, listTags } from "@/lib/recipes";
+import { findTagName, listRecipes, listTags } from "@/lib/recipes";
 import { tagHref } from "@/lib/tags";
 
 type PageProps = { searchParams: Promise<{ q?: string; tag?: string }> };
@@ -11,28 +11,37 @@ type PageProps = { searchParams: Promise<{ q?: string; tag?: string }> };
 /**
  * A search is the recipe list filtered, not a page of its own, so it is kept
  * out of the index. Otherwise every term anyone searches for becomes another
- * address holding the same title and description as the list. A chosen tag
- * filters the same list, so it is treated the same way.
+ * address holding the same title and description as the list. It keeps
+ * `follow`, so a crawler still reads the recipes it links to, and carries no
+ * canonical, because a canonical pointing somewhere else alongside `noindex`
+ * is a contradiction Google warns against.
  *
- * Both keep `follow`, so a crawler still reads the recipes they link to, and
- * carry no canonical, because a canonical pointing somewhere else alongside
- * `noindex` is a contradiction Google warns against.
+ * A tag is different. There is a fixed set of them, each one a subject a
+ * reader could search for, so a tag is a page worth indexing under its own
+ * address. A tag no recipe carries is not: the page would be empty, so it is
+ * treated like a search.
  */
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const { q, tag } = await searchParams;
   const query = q?.trim() ?? "";
   const chosen = tag?.trim() ?? "";
 
-  if (query && chosen) {
-    return { title: `Search: ${query} in ${chosen}`, robots: { index: false, follow: true } };
-  }
-
   if (query) {
-    return { title: `Search: ${query}`, robots: { index: false, follow: true } };
+    const title = chosen ? `Search: ${query} in ${chosen}` : `Search: ${query}`;
+
+    return { title, robots: { index: false, follow: true } };
   }
 
   if (chosen) {
-    return { title: `Tag: ${chosen}`, robots: { index: false, follow: true } };
+    const name = await findTagName(chosen);
+
+    if (!name) return { title: `Tag: ${chosen}`, robots: { index: false, follow: true } };
+
+    return {
+      title: `${name} recipes`,
+      description: `Every recipe tagged ${name}.`,
+      alternates: { canonical: tagHref(chosen) },
+    };
   }
 
   return { alternates: { canonical: "/" } };

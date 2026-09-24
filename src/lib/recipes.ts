@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, exists, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, ilike, max, or, sql } from "drizzle-orm";
 import { cache } from "react";
 
 import { db } from "@/db";
@@ -84,6 +84,39 @@ export async function listTags() {
     .innerJoin(recipeTags, eq(recipeTags.tagId, tags.id))
     .groupBy(tags.id)
     .orderBy(desc(count(recipeTags.recipeId)), asc(tags.slug));
+}
+
+/**
+ * The name a tag is shown under, or undefined when no recipe carries it.
+ *
+ * The join is what makes the second half true, and it is what stops the page
+ * offering to index a tag that leads to an empty list. Wrapped in `cache` for
+ * the same reason `findRecipeBySlug` is: the page and its `generateMetadata`
+ * both ask.
+ */
+export const findTagName = cache(async (slug: string) => {
+  const [row] = await db
+    .select({ name: tags.name })
+    .from(tags)
+    .innerJoin(recipeTags, eq(recipeTags.tagId, tags.id))
+    .where(eq(tags.slug, slug))
+    .limit(1);
+
+  return row?.name;
+});
+
+/**
+ * The address of every tag in use, and when a recipe carrying it last
+ * changed. The sitemap needs nothing else about a tag.
+ */
+export async function listTagAddresses() {
+  return db
+    .select({ slug: tags.slug, updatedAt: max(recipes.updatedAt) })
+    .from(tags)
+    .innerJoin(recipeTags, eq(recipeTags.tagId, tags.id))
+    .innerJoin(recipes, eq(recipes.id, recipeTags.recipeId))
+    .groupBy(tags.slug)
+    .orderBy(asc(tags.slug));
 }
 
 /**
