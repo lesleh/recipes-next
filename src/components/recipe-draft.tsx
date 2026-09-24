@@ -1,5 +1,6 @@
 import { ingredientAmount, instructionSteps } from "@/lib/format";
 import type { GeneratedRecipe } from "@/lib/recipe-writer";
+import { parseTags } from "@/lib/tags";
 
 /**
  * A draft as it would look once saved. Read-only on purpose: a change goes
@@ -7,6 +8,7 @@ import type { GeneratedRecipe } from "@/lib/recipe-writer";
  */
 export function RecipeDraft({ draft }: { draft: GeneratedRecipe }) {
   const steps = instructionSteps(draft.instructions);
+  const tags = parseTags([draft.tags]);
 
   return (
     <section aria-labelledby="draft-title" className="panel">
@@ -39,6 +41,18 @@ export function RecipeDraft({ draft }: { draft: GeneratedRecipe }) {
           </span>
         )}
       </p>
+
+      {/* Plain pills rather than links: nothing is saved yet, so there is
+          nothing to filter the list by. */}
+      {tags.length > 0 && (
+        <ul aria-label="Tags" className="tag-list mt-4">
+          {tags.map((tag) => (
+            <li key={tag}>
+              <span className="tag">{tag}</span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="mt-6 grid gap-x-10 gap-y-6 lg:grid-cols-[16rem_minmax(0,1fr)]">
         <div>

@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import type { RecipeModelId } from "./ai-models";
+import { parseTags } from "./tags";
 import type { RecipeInput } from "./validation";
 
 export const GATEWAY_KEY_MISSING =
@@ -28,10 +29,10 @@ export const generatedRecipeSchema = z.object({
     .describe(
       'The cooking tradition the dish belongs to, such as "Italian" or "Thai". Empty if it belongs to none.',
     ),
-  keywords: z
+  tags: z
     .string()
     .describe(
-      "Other terms someone would search for this dish by, separated by commas. Do not repeat the category or the cuisine.",
+      "Up to five short terms someone would look for this dish by, separated by commas. One or two words each, reusable across recipes, such as \"weeknight\" or \"freezer friendly\". Not a phrase, and not the category or the cuisine again.",
     ),
   servings: z.number().int().positive().describe("How many people the recipe serves."),
   prepTimeMinutes: z.number().int().positive().describe("Preparation time in whole minutes."),
@@ -93,7 +94,7 @@ export function toRecipeInput(generated: GeneratedRecipe): RecipeInput {
     description: blankToNull(generated.description),
     category: blankToNull(generated.category),
     cuisine: blankToNull(generated.cuisine),
-    keywords: blankToNull(generated.keywords),
+    tags: parseTags([generated.tags]),
     servings: generated.servings,
     prepTimeMinutes: generated.prepTimeMinutes,
     cookTimeMinutes: generated.cookTimeMinutes,

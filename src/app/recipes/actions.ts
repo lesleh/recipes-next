@@ -6,7 +6,9 @@ import { redirect } from "next/navigation";
 
 import { db } from "@/db";
 import { recipeSlugs, recipes } from "@/db/schema";
+import { deleteOrphanTags } from "@/lib/recipe-tags";
 import { slugify } from "@/lib/slug";
+import { parseTags } from "@/lib/tags";
 import { removeImage, storeImage } from "@/lib/storage";
 import { recipeSchema, validateImage } from "@/lib/validation";
 
@@ -27,7 +29,7 @@ const FORM_FIELDS = new Set([
   "description",
   "category",
   "cuisine",
-  "keywords",
+  "tags",
   "servings",
   "prepTimeMinutes",
   "cookTimeMinutes",
@@ -57,6 +59,15 @@ function text(formData: FormData, key: string) {
   return typeof value === "string" ? value : "";
 }
 
+/**
+ * Every value submitted under one name. The tags field is one text input
+ * today, and reading all of them is what lets #15 replace it with a set of
+ * pills without changing anything here.
+ */
+function texts(formData: FormData, key: string) {
+  return formData.getAll(key).filter((value) => typeof value === "string");
+}
+
 export async function saveRecipe(
   _previousState: RecipeFormState,
   formData: FormData,
@@ -76,7 +87,7 @@ export async function saveRecipe(
     description: text(formData, "description"),
     category: text(formData, "category"),
     cuisine: text(formData, "cuisine"),
-    keywords: text(formData, "keywords"),
+    tags: parseTags(texts(formData, "tags")),
     servings: text(formData, "servings"),
     prepTimeMinutes: text(formData, "prepTimeMinutes"),
     cookTimeMinutes: text(formData, "cookTimeMinutes"),
@@ -147,6 +158,10 @@ export async function deleteRecipe(formData: FormData) {
     .where(eq(recipeSlugs.recipeId, id));
 
   await db.delete(recipes).where(eq(recipes.id, id));
+
+  // The join rows go with the recipe through the cascade, which can leave a
+  // tag behind with nothing carrying it.
+  await deleteOrphanTags(db);
 
   if (existing.imagePathname) {
     await removeImage(existing.imagePathname);

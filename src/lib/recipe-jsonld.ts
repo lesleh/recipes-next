@@ -1,4 +1,4 @@
-import type { Ingredient, Recipe } from "@/db/schema";
+import type { Ingredient, Recipe, Tag } from "@/db/schema";
 
 import { ingredientAmount, instructionSteps, pluralize, totalTimeMinutes } from "./format";
 import { absoluteUrl, SITE_AUTHOR, SITE_NAME } from "./site";
@@ -10,7 +10,6 @@ type RecipeForJsonLd = Pick<
   | "description"
   | "category"
   | "cuisine"
-  | "keywords"
   | "servings"
   | "prepTimeMinutes"
   | "cookTimeMinutes"
@@ -18,7 +17,10 @@ type RecipeForJsonLd = Pick<
   | "imageUrl"
   | "createdAt"
   | "updatedAt"
-> & { ingredients: Pick<Ingredient, "name" | "quantity" | "unit">[] };
+> & {
+  ingredients: Pick<Ingredient, "name" | "quantity" | "unit">[];
+  tags: Pick<Tag, "name">[];
+};
 
 type HowToStep = { "@type": "HowToStep"; text: string; url: string };
 type Person = { "@type": "Person"; name: string };
@@ -58,19 +60,6 @@ function isoDuration(minutes: number) {
   return `PT${minutes}M`;
 }
 
-/**
- * Keywords as the one comma separated line schema.org reads. Whatever spacing
- * the recipe was typed with, each term comes out trimmed and separated by a
- * comma and a space, and an empty term goes.
- */
-function keywordList(keywords: string) {
-  return keywords
-    .split(",")
-    .map((keyword) => keyword.trim())
-    .filter((keyword) => keyword)
-    .join(", ");
-}
-
 /** The amount and the name as one line, the way the recipe page reads. */
 function ingredientText(ingredient: Pick<Ingredient, "name" | "quantity" | "unit">) {
   return [ingredientAmount(ingredient), ingredient.name.trim()].filter((part) => part).join(" ");
@@ -88,7 +77,9 @@ export function recipeJsonLd(recipe: RecipeForJsonLd): RecipeJsonLd {
   const description = recipe.description?.trim();
   const category = recipe.category?.trim();
   const cuisine = recipe.cuisine?.trim();
-  const keywords = recipe.keywords ? keywordList(recipe.keywords) : "";
+  // The recipe's tags are the other terms search engines ask for, as the one
+  // comma separated line schema.org reads.
+  const keywords = recipe.tags.map((tag) => tag.name).join(", ");
 
   return {
     "@context": "https://schema.org",

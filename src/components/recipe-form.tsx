@@ -7,6 +7,7 @@ import { saveRecipe, type RecipeFormState } from "@/app/recipes/actions";
 import { FieldError, messagesFor } from "@/components/field-error";
 import { PhotoField } from "@/components/photo-field";
 import type { RecipeWithIngredients } from "@/db/schema";
+import { MAX_TAGS } from "@/lib/tags";
 
 type IngredientRow = { key: string; quantity: string; unit: string; name: string };
 
@@ -48,7 +49,7 @@ export function RecipeForm({
     description: recipe?.description ?? "",
     category: recipe?.category ?? "",
     cuisine: recipe?.cuisine ?? "",
-    keywords: recipe?.keywords ?? "",
+    tags: (recipe?.tags ?? []).map((tag) => tag.name).join(", "),
     servings: recipe?.servings?.toString() ?? "",
     prepTimeMinutes: recipe?.prepTimeMinutes?.toString() ?? "",
     cookTimeMinutes: recipe?.cookTimeMinutes?.toString() ?? "",
@@ -174,18 +175,19 @@ export function RecipeForm({
       </div>
 
       <div className="field">
-        <label htmlFor="keywords">Keywords</label>
+        <label htmlFor="tags">Tags</label>
         <p className="field__hint">
-          Other terms for the dish, separated by commas. Leave out the category and the cuisine.
+          Separated by commas, such as weeknight, freezer friendly. Up to {MAX_TAGS}, and each one
+          is a term you would want to find other recipes by.
         </p>
         <input
-          id="keywords"
-          name="keywords"
-          value={values.keywords}
-          onChange={(event) => setValue("keywords")(event.target.value)}
-          {...invalid("keywords")}
+          id="tags"
+          name="tags"
+          value={values.tags}
+          onChange={(event) => setValue("tags")(event.target.value)}
+          {...invalid("tags")}
         />
-        <FieldError errors={state.errors} field="keywords" />
+        <FieldError errors={state.errors} field="tags" />
       </div>
 
       <PhotoField recipe={recipe} errors={state.errors} />

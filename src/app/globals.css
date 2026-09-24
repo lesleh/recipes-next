@@ -324,6 +324,27 @@
     overflow-wrap: anywhere;
   }
 
+  /*
+   * A tag, on a card and on a recipe page. Smaller than a button, because a
+   * recipe carries up to ten of them: 2rem and the gap between them still
+   * clear the 24px a pointer target needs.
+   */
+  .tag-list {
+    @apply m-0 flex list-none flex-wrap gap-2 p-0;
+  }
+
+  .tag {
+    @apply border-line bg-card text-ink-soft inline-flex items-center rounded-control border
+      px-2.5 py-1 text-sm no-underline;
+    min-height: 2rem;
+    /* A tag can be 50 characters, which is wider than a narrow phone. */
+    overflow-wrap: anywhere;
+  }
+
+  .tag:hover {
+    @apply border-line-strong text-ink;
+  }
+
   /* A recipe with nothing in a section still has to look finished. */
   .empty {
     @apply border-line text-ink-soft rounded-surface border border-dashed px-4 py-5 text-base;

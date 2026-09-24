@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes } from "@/db/schema";
+import { findRecipeBySlug } from "@/lib/recipes";
 import { DEFAULT_RECIPE_MODEL } from "@/lib/ai-models";
 import type { GeneratedRecipe } from "@/lib/recipe-writer";
 
@@ -25,7 +26,7 @@ const generated: GeneratedRecipe = {
   description: "A weeknight dal.",
   category: "Main course",
   cuisine: "Indian",
-  keywords: "dal, lentils",
+  tags: "dal, lentils",
   servings: 4,
   prepTimeMinutes: 10,
   cookTimeMinutes: 25,
@@ -184,6 +185,14 @@ describe("writeRecipe saving a draft", () => {
 
     expect(rows.map((row) => row.name)).toEqual(["Red lentils", "Cumin seeds", "Salt"]);
     expect(rows[2].quantity).toBeNull();
+  });
+
+  it("gives the recipe the tags the model wrote", async () => {
+    await captureRedirect(() => run(withDraft, { intent: "save" }));
+
+    const recipe = await findRecipeBySlug("red-lentil-dal");
+
+    expect(recipe?.tags.map((tag) => tag.name)).toEqual(["dal", "lentils"]);
   });
 
   it("records the slug in the history, as a typed recipe does", async () => {

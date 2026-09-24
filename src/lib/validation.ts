@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { MAX_TAG_NAME, MAX_TAGS } from "./tags";
+
 export const IMAGE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 // Vercel caps a function request body at 4.5MB and will not raise it, so the
 // limit the form advertises has to sit below that rather than at the 10MB the
@@ -34,7 +36,11 @@ export const recipeSchema = z.object({
   description: optionalText(2000),
   category: optionalText(100),
   cuisine: optionalText(100),
-  keywords: optionalText(300),
+  // Already split, trimmed and deduplicated by `parseTags`. What is left to
+  // check is how many there are and how long each one is.
+  tags: z
+    .array(z.string().trim().max(MAX_TAG_NAME, `A tag must be ${MAX_TAG_NAME} characters or fewer`))
+    .max(MAX_TAGS, `A recipe can carry at most ${MAX_TAGS} tags`),
   servings: optionalPositiveInt,
   prepTimeMinutes: optionalPositiveInt,
   cookTimeMinutes: optionalPositiveInt,

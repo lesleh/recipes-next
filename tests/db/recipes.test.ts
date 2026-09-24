@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { db } from "@/db";
 import { recipes } from "@/db/schema";
-import { findCurrentSlug, findRecipeBySlug, listRecipes } from "@/lib/recipes";
+import { findCurrentSlug, findRecipeBySlug, listRecipes, listTags } from "@/lib/recipes";
 
 import { createRecipe } from "../support/factories";
 
@@ -73,6 +73,14 @@ describe("listRecipes", () => {
     expect(await listRecipes("_")).toEqual([]);
   });
 
+  it("gives a recipe's tags in slug order, whatever case they were typed in", async () => {
+    await createRecipe({ title: "Bread", tags: ["Weeknight", "apple", "Baking"] });
+
+    const [recipe] = await listRecipes();
+
+    expect(recipe.tags.map((tag) => tag.name)).toEqual(["apple", "Baking", "Weeknight"]);
+  });
+
   it("gives the ingredients in their stored order", async () => {
     await createRecipe({
       title: "Bread",
@@ -89,6 +97,35 @@ describe("listRecipes", () => {
   });
 });
 
+describe("listTags", () => {
+  it("gives every tag in use, with how many recipes carry it", async () => {
+    await createRecipe({ title: "Bread", tags: ["baking"] });
+    await createRecipe({ title: "Brioche", tags: ["baking"] });
+
+    expect(await listTags()).toEqual([{ name: "baking", slug: "baking", recipeCount: 2 }]);
+  });
+
+  it("counts two spellings of one tag as that one tag", async () => {
+    await createRecipe({ title: "Bread", tags: ["Weeknight"] });
+    await createRecipe({ title: "Salad", tags: ["weeknight"] });
+
+    expect(await listTags()).toEqual([{ name: "Weeknight", slug: "weeknight", recipeCount: 2 }]);
+  });
+
+  it("orders by the count, highest first, then by slug", async () => {
+    await createRecipe({ title: "Bread", tags: ["baking", "Weeknight", "apple"] });
+    await createRecipe({ title: "Brioche", tags: ["baking"] });
+
+    expect((await listTags()).map((tag) => tag.slug)).toEqual(["baking", "apple", "weeknight"]);
+  });
+
+  it("gives nothing when no recipe carries a tag", async () => {
+    await createRecipe({ title: "Bread" });
+
+    expect(await listTags()).toEqual([]);
+  });
+});
+
 describe("findRecipeBySlug", () => {
   it("gives the recipe holding the slug, with its ingredients", async () => {
     await createRecipe({
@@ -100,6 +137,14 @@ describe("findRecipeBySlug", () => {
 
     expect(recipe?.title).toBe("Bread");
     expect(recipe?.ingredients).toHaveLength(1);
+  });
+
+  it("gives the recipe's tags in slug order", async () => {
+    await createRecipe({ title: "Bread", tags: ["Weeknight", "apple"] });
+
+    const recipe = await findRecipeBySlug("bread");
+
+    expect(recipe?.tags.map((tag) => tag.name)).toEqual(["apple", "Weeknight"]);
   });
 
   it("gives nothing for a slug no recipe holds", async () => {

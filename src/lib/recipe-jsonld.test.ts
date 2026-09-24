@@ -11,7 +11,6 @@ function recipe(overrides: Overrides = {}) {
     description: null,
     category: null,
     cuisine: null,
-    keywords: null,
     servings: null,
     prepTimeMinutes: null,
     cookTimeMinutes: null,
@@ -20,6 +19,7 @@ function recipe(overrides: Overrides = {}) {
     createdAt: new Date("2026-05-28T18:00:00.000Z"),
     updatedAt: new Date("2026-06-04T09:30:00.000Z"),
     ingredients: [],
+    tags: [],
     ...overrides,
   };
 }
@@ -38,7 +38,7 @@ describe("recipeJsonLd", () => {
           description: "Thin ones, the way they should be.",
           category: "Breakfast",
           cuisine: "British",
-          keywords: "pancakes, batter",
+          tags: [{ name: "batter" }, { name: "pancakes" }],
           servings: 4,
           prepTimeMinutes: 20,
           cookTimeMinutes: 10,
@@ -59,7 +59,7 @@ describe("recipeJsonLd", () => {
       image: "https://blob.example/recipes/pancakes.jpg",
       recipeCategory: "Breakfast",
       recipeCuisine: "British",
-      keywords: "pancakes, batter",
+      keywords: "batter, pancakes",
       recipeYield: "4 servings",
       prepTime: "PT20M",
       cookTime: "PT10M",
@@ -97,14 +97,14 @@ describe("recipeJsonLd", () => {
     expect(recipeJsonLd(recipe({ description: "   " }))).not.toHaveProperty("description");
   });
 
-  it("tidies the spacing between keywords and drops an empty one", () => {
-    expect(recipeJsonLd(recipe({ keywords: " pancakes ,,batter , brunch " })).keywords).toBe(
-      "pancakes, batter, brunch",
-    );
+  it("sends the tags as the keywords, in the order they are given", () => {
+    const tags = [{ name: "batter" }, { name: "brunch" }, { name: "Pancakes" }];
+
+    expect(recipeJsonLd(recipe({ tags })).keywords).toBe("batter, brunch, Pancakes");
   });
 
-  it("leaves out keywords that are only commas", () => {
-    expect(recipeJsonLd(recipe({ keywords: " , , " }))).not.toHaveProperty("keywords");
+  it("leaves out the keywords when the recipe carries no tags", () => {
+    expect(recipeJsonLd(recipe())).not.toHaveProperty("keywords");
   });
 
   it("says one serving in the singular", () => {

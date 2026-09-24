@@ -3,6 +3,7 @@ import {
   index,
   integer,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -16,12 +17,10 @@ export const recipes = pgTable(
     title: text("title").notNull(),
     slug: text("slug").notNull(),
     description: text("description"),
-    // Three fields search engines ask a recipe for: the course, the cooking
-    // tradition, and other terms for the dish. Keywords are one comma
-    // separated line, which is the form schema.org reads.
+    // Two fields search engines ask a recipe for: the course and the cooking
+    // tradition. The other terms they ask for are the recipe's tags.
     category: text("category"),
     cuisine: text("cuisine"),
-    keywords: text("keywords"),
     servings: integer("servings"),
     prepTimeMinutes: integer("prep_time_minutes"),
     cookTimeMinutes: integer("cook_time_minutes"),
@@ -52,6 +51,41 @@ export const recipeSlugs = pgTable(
   (table) => [index("recipe_slugs_recipe_id_idx").on(table.recipeId)],
 );
 
+/**
+ * A tag belongs to nobody. Two tags are the same tag when their slugs match,
+ * so `Weeknight` and `week night` are one row, holding the name as it was
+ * first typed.
+ */
+export const tags = pgTable(
+  "tags",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex("tags_slug_idx").on(table.slug)],
+);
+
+export const recipeTags = pgTable(
+  "recipe_tags",
+  {
+    recipeId: integer("recipe_id")
+      .notNull()
+      .references(() => recipes.id, { onDelete: "cascade" }),
+    tagId: integer("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.recipeId, table.tagId] }),
+    // The recipe side is the primary key's own index. This is the other
+    // direction: every recipe carrying one tag, which is what filtering and
+    // the sidebar counts read.
+    index("recipe_tags_tag_id_idx").on(table.tagId),
+  ],
+);
+
 export const ingredients = pgTable(
   "ingredients",
   {
@@ -75,6 +109,22 @@ export const ingredients = pgTable(
 export const recipesRelations = relations(recipes, ({ many }) => ({
   ingredients: many(ingredients),
   slugs: many(recipeSlugs),
+  tags: many(recipeTags),
+}));
+
+export const tagsRelations = relations(tags, ({ many }) => ({
+  recipes: many(recipeTags),
+}));
+
+export const recipeTagsRelations = relations(recipeTags, ({ one }) => ({
+  recipe: one(recipes, {
+    fields: [recipeTags.recipeId],
+    references: [recipes.id],
+  }),
+  tag: one(tags, {
+    fields: [recipeTags.tagId],
+    references: [tags.id],
+  }),
 }));
 
 export const recipeSlugsRelations = relations(recipeSlugs, ({ one }) => ({
@@ -94,4 +144,5 @@ export const ingredientsRelations = relations(ingredients, ({ one }) => ({
 export type Recipe = typeof recipes.$inferSelect;
 export type Ingredient = typeof ingredients.$inferSelect;
 export type RecipeSlug = typeof recipeSlugs.$inferSelect;
-export type RecipeWithIngredients = Recipe & { ingredients: Ingredient[] };
+export type Tag = typeof tags.$inferSelect;
+export type RecipeWithIngredients = Recipe & { ingredients: Ingredient[]; tags: Tag[] };

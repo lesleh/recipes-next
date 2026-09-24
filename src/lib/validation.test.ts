@@ -7,6 +7,7 @@ import {
   recipeSchema,
   validateImage,
 } from "./validation";
+import { MAX_TAG_NAME, MAX_TAGS } from "./tags";
 
 /** A File of a given size, without holding that many bytes in memory. */
 function imageFile({ type, size = 1024 }: { type: string; size?: number }) {
@@ -21,7 +22,7 @@ const valid = {
   description: "",
   category: "",
   cuisine: "",
-  keywords: "",
+  tags: [],
   servings: "",
   prepTimeMinutes: "",
   cookTimeMinutes: "",
@@ -74,23 +75,43 @@ describe("recipeSchema", () => {
     }
   });
 
-  it("keeps the course, the cuisine and the keywords as typed", () => {
+  it("keeps the course and the cuisine as typed", () => {
     const result = recipeSchema.parse({
       ...valid,
       category: " Main course ",
       cuisine: "Italian",
-      keywords: "pasta, quick",
     });
 
-    expect(result).toMatchObject({
-      category: "Main course",
-      cuisine: "Italian",
-      keywords: "pasta, quick",
-    });
+    expect(result).toMatchObject({ category: "Main course", cuisine: "Italian" });
   });
 
-  it("refuses keywords over 300 characters", () => {
-    expect(recipeSchema.safeParse({ ...valid, keywords: "a".repeat(301) }).success).toBe(false);
+  it("keeps the tags it is given", () => {
+    expect(recipeSchema.parse({ ...valid, tags: ["weeknight", "chicken"] }).tags).toEqual([
+      "weeknight",
+      "chicken",
+    ]);
+  });
+
+  it(`refuses a tag over ${MAX_TAG_NAME} characters`, () => {
+    const tags = ["a".repeat(MAX_TAG_NAME + 1)];
+
+    expect(recipeSchema.safeParse({ ...valid, tags }).success).toBe(false);
+    expect(recipeSchema.safeParse({ ...valid, tags: ["a".repeat(MAX_TAG_NAME)] }).success).toBe(
+      true,
+    );
+  });
+
+  it(`refuses more than ${MAX_TAGS} tags`, () => {
+    const tags = Array.from({ length: MAX_TAGS + 1 }, (_, index) => `tag ${index}`);
+
+    expect(recipeSchema.safeParse({ ...valid, tags }).success).toBe(false);
+    expect(recipeSchema.safeParse({ ...valid, tags: tags.slice(1) }).success).toBe(true);
+  });
+
+  it("points a tag error at the tags field", () => {
+    const result = recipeSchema.safeParse({ ...valid, tags: ["a".repeat(MAX_TAG_NAME + 1)] });
+
+    expect(result.error?.issues[0]?.path[0]).toBe("tags");
   });
 
   it("points an error at the field it belongs to", () => {

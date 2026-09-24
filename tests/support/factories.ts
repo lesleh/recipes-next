@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes } from "@/db/schema";
+import { replaceTags } from "@/lib/recipe-tags";
 import { slugify } from "@/lib/slug";
 
 type IngredientRow = { name: string; quantity?: string | null; unit?: string | null };
@@ -15,6 +16,8 @@ type RecipeAttributes = {
   imageUrl?: string | null;
   imagePathname?: string | null;
   ingredients?: IngredientRow[];
+  /** Tag names, as the form would have submitted them. */
+  tags?: string[];
   /** Slugs the recipe held before this one, as a rename would have left them. */
   formerSlugs?: string[];
 };
@@ -62,6 +65,10 @@ export async function createRecipe(attributes: RecipeAttributes = {}) {
         position: index + 1,
       })),
     );
+  }
+
+  if (attributes.tags && attributes.tags.length > 0) {
+    await replaceTags(db, recipe.id, attributes.tags);
   }
 
   return recipe;
