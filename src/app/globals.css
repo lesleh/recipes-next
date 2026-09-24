@@ -78,7 +78,7 @@
     /* The main ink passes AA over every piece up to 63%, the step numbers up
        to 59%. Nothing in soft ink sits where a drawing can reach. */
     --art-opacity: 0.55;
-    --art-size: clamp(180px, 28vw, 360px);
+    --art-size: clamp(180px, 36vw, 560px);
   }
 
   /* The width axis is what makes Archivo a display face here rather than
@@ -428,9 +428,10 @@
     z-index: -1;
   }
 
-  /* Room to scroll the last of the page clear of the drawing. */
+  /* Room to scroll the last of the page clear of the drawing's pieces. Less
+     than its full height, because the top-left of a drawing is kept empty. */
   .page--art {
-    padding-bottom: var(--art-size);
+    padding-bottom: calc(var(--art-size) * 0.6);
   }
 }
 
