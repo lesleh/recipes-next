@@ -143,7 +143,7 @@ function detailOf(error: unknown) {
  * or a model the account cannot reach, so it is repeated on the page rather
  * than left in the server log.
  */
-export function describeFailure(error: unknown) {
+export function describeFailure(error: unknown, task = "write a recipe") {
   const detail = detailOf(error);
   const status = statusOf(error);
 
@@ -160,8 +160,8 @@ export function describeFailure(error: unknown) {
   }
 
   return detail
-    ? `The model could not write a recipe. ${detail}`
-    : "The model could not write a recipe. Try again, or pick another model.";
+    ? `The model could not ${task}. ${detail}`
+    : `The model could not ${task}. Try again, or pick another model.`;
 }
 
 /**
