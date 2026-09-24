@@ -35,7 +35,7 @@ export function RecipeCard({ recipe }: { recipe: RecipeListItem }) {
           </h2>
 
           {recipe.description && (
-            <p className="text-ink-soft mt-1 text-base">{truncate(recipe.description, 140)}</p>
+            <p className="text-ink mt-1 text-base">{truncate(recipe.description, 140)}</p>
           )}
 
           <p className="meta mt-2">
