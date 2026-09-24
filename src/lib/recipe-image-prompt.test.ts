@@ -20,6 +20,8 @@ function recipe(attributes: Partial<RecipeWithIngredients> = {}): RecipeWithIngr
     instructions: "Rinse the lentils.\nSimmer for 20 minutes.",
     imageUrl: null,
     imagePathname: null,
+    illustration: null,
+    illustratedAt: null,
     createdAt: now,
     updatedAt: now,
     tags: [],

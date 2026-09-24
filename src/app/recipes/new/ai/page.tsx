@@ -7,10 +7,10 @@ export const metadata = { title: "Write a recipe with AI" };
 
 /**
  * A page-level limit covers the server function on it. A recipe takes tens of
- * seconds, so this is headroom rather than a target: a stuck request fails
- * while someone is still watching.
+ * seconds, and saving one draws its illustration afterwards inside the same
+ * limit, so this is headroom rather than a target.
  */
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 /**
  * The key is read on every request rather than at build time. Prerendered,

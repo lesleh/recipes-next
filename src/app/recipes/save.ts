@@ -1,6 +1,7 @@
 import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { after } from "next/server";
 
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes, type Recipe } from "@/db/schema";
@@ -9,6 +10,8 @@ import { replaceTags } from "@/lib/recipe-tags";
 import { RESERVED_SLUGS } from "@/lib/slug";
 import { removeImage, type StoredImage } from "@/lib/storage";
 import type { RecipeInput } from "@/lib/validation";
+
+import { illustrateRecipe } from "./illustrate";
 
 /**
  * Everything both ways of making a recipe share: the password check, the slug
@@ -77,7 +80,7 @@ export async function persistRecipe({
   existing?: Recipe | null;
   image?: ImageChange | null;
 }) {
-  await db.transaction(async (tx) => {
+  const savedId = await db.transaction(async (tx) => {
     const values = {
       title: recipe.title,
       slug,
@@ -122,6 +125,8 @@ export async function persistRecipe({
         })),
       );
     }
+
+    return recipeId;
   });
 
   // Only once the row is safely saved, or a failed update would lose the photo.
@@ -133,4 +138,16 @@ export async function persistRecipe({
   revalidatePath(`/recipes/${slug}`);
   // A rename leaves the old address redirecting, so its cached page has to go.
   if (existing && existing.slug !== slug) revalidatePath(`/recipes/${existing.slug}`);
+
+  // A new recipe gets one drawing, after the reader has been sent on. An edit
+  // never draws, because a drawing costs money; the edit page has a button.
+  if (!existing && process.env.AI_GATEWAY_API_KEY) {
+    after(async () => {
+      try {
+        await illustrateRecipe(savedId);
+      } catch (error) {
+        console.error(`Drawing recipe ${savedId} failed`, error);
+      }
+    });
+  }
 }
