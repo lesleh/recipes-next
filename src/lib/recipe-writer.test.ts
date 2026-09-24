@@ -137,6 +137,16 @@ describe("describeFailure", () => {
     );
   });
 
+  it("reads the gateway's own error once the SDK's retries run out", () => {
+    const retries = Object.assign(new Error("Failed after 3 attempts. Last error: ..."), {
+      lastError: gatewayError("No access to this model at this time.", 429),
+    });
+
+    expect(describeFailure(retries, "draw an illustration")).toBe(
+      "The AI Gateway is rate limiting. No access to this model at this time.",
+    );
+  });
+
   it("keeps the first line, because the rest is a stack", () => {
     const message = describeFailure(new Error("Unauthenticated request.\n\nSet the variable."));
 

@@ -109,6 +109,18 @@ export function toRecipeInput(generated: GeneratedRecipe): RecipeInput {
   };
 }
 
+/**
+ * The error behind the SDK's own retries. Once they run out, it throws a
+ * RetryError whose message and status hide what the gateway said.
+ */
+function underlying(error: unknown): unknown {
+  if (typeof error === "object" && error !== null && "lastError" in error) {
+    return (error as { lastError: unknown }).lastError;
+  }
+
+  return error;
+}
+
 /** The status a gateway or provider error carries, when it carries one. */
 function statusOf(error: unknown) {
   if (typeof error !== "object" || error === null || !("statusCode" in error)) return undefined;
@@ -143,7 +155,8 @@ function detailOf(error: unknown) {
  * or a model the account cannot reach, so it is repeated on the page rather
  * than left in the server log.
  */
-export function describeFailure(error: unknown, task = "write a recipe") {
+export function describeFailure(failure: unknown, task = "write a recipe") {
+  const error = underlying(failure);
   const detail = detailOf(error);
   const status = statusOf(error);
 

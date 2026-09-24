@@ -133,7 +133,7 @@ drawing (an olive branch, tomatoes and a chilli) in the same corner, since no
 one recipe owns the list.
 
 `position: fixed` in the bottom-right corner at every width, behind the
-content, sized `clamp(180px, 28vw, 360px)`. Pieces that run past the edge are
+content, sized `clamp(180px, 36vw, 560px)`. Pieces that run past the edge are
 clipped by the window.
 
 Bottom right because the text is left-aligned. Step lines end ragged and
@@ -155,8 +155,9 @@ their hierarchy through size and weight. Small accent text fails above 38%, so
 quiet and danger buttons get a paper background, and breadcrumb links use the
 main ink.
 
-- The page gets bottom padding equal to the drawing's height, so the last
-  step and the buttons can scroll clear of it.
+- The page gets bottom padding of 60% of the drawing's height, so the last
+  step and the buttons can scroll clear of its pieces. The top-left of a
+  drawing is kept empty, so the full height is not needed.
 - The bottom offset uses `env(safe-area-inset-bottom)` for phones with a home
   bar.
 - Always `aria-hidden`, `pointer-events: none`, and hidden in print.
