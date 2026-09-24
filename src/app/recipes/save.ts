@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes, type Recipe } from "@/db/schema";
 import { checkWriteAccess, WRITE_PASSWORD_MISSING } from "@/lib/auth";
+import { replaceTags } from "@/lib/recipe-tags";
 import { RESERVED_SLUGS } from "@/lib/slug";
 import { removeImage, type StoredImage } from "@/lib/storage";
 import type { RecipeInput } from "@/lib/validation";
@@ -83,7 +84,6 @@ export async function persistRecipe({
       description: recipe.description,
       category: recipe.category,
       cuisine: recipe.cuisine,
-      keywords: recipe.keywords,
       servings: recipe.servings,
       prepTimeMinutes: recipe.prepTimeMinutes,
       cookTimeMinutes: recipe.cookTimeMinutes,
@@ -108,6 +108,8 @@ export async function persistRecipe({
     // A rename keeps the old slug here, which is what redirects the old
     // address. Renaming back to an earlier title finds its row already there.
     await tx.insert(recipeSlugs).values({ slug, recipeId }).onConflictDoNothing();
+
+    await replaceTags(tx, recipeId, recipe.tags);
 
     if (recipe.ingredients.length > 0) {
       await tx.insert(ingredients).values(

@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { DeleteRecipeButton } from "@/components/delete-recipe-button";
+import { TagList } from "@/components/tag-list";
 import { ingredientAmount, instructionSteps, truncate } from "@/lib/format";
 import { breadcrumbJsonLd, jsonLdScript, recipeJsonLd } from "@/lib/recipe-jsonld";
 import { findRecipeBySlug, listRecipeAddresses } from "@/lib/recipes";
@@ -116,6 +117,14 @@ export default async function RecipePage({ params }: PageProps) {
             </span>
           )}
         </p>
+      )}
+
+      {/* Shown as well as sent in the structured data, where they are the
+          recipe's keywords. */}
+      {recipe.tags.length > 0 && (
+        <div className="mt-4">
+          <TagList tags={recipe.tags} label="Tags" />
+        </div>
       )}
 
       {recipe.imageUrl && (

@@ -1,8 +1,10 @@
-import { and, asc, eq, exists, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, ilike, max, or, sql } from "drizzle-orm";
 import { cache } from "react";
 
 import { db } from "@/db";
-import { ingredients, recipeSlugs, recipes } from "@/db/schema";
+import { ingredients, recipeSlugs, recipeTags, recipes, tags, type Tag } from "@/db/schema";
+
+import { bySlug } from "./tags";
 
 /** Escape the LIKE wildcards so a search for "100%" does not match everything. */
 function likePattern(term: string) {
@@ -18,23 +20,103 @@ function matchesIngredient(pattern: string) {
   );
 }
 
-export async function listRecipes(query?: string) {
-  const term = query?.trim();
+function carriesTag(slug: string) {
+  return exists(
+    db
+      .select({ found: sql`1` })
+      .from(recipeTags)
+      .innerJoin(tags, eq(tags.id, recipeTags.tagId))
+      .where(and(eq(recipeTags.recipeId, recipes.id), eq(tags.slug, slug))),
+  );
+}
+
+/**
+ * The join rows flattened to the tags themselves, in slug order.
+ *
+ * Sorted here rather than by the query, because the tags arrive through the
+ * join table and a nested query cannot order by a column on the table beyond
+ * it.
+ */
+function tagsOf(joins: { tag: Tag }[]) {
+  return joins.map((join) => join.tag).sort(bySlug);
+}
+
+/**
+ * The recipe list, filtered by a search term, a tag, or both together. A
+ * search inside a tag returns the recipes matching both.
+ */
+export async function listRecipes({ query = "", tag = "" }: { query?: string; tag?: string } = {}) {
+  const term = query.trim();
   const pattern = term ? likePattern(term) : null;
 
-  return db.query.recipes.findMany({
-    where: pattern
+  const filters = [
+    pattern
       ? or(
           ilike(recipes.title, pattern),
           ilike(recipes.description, pattern),
           matchesIngredient(pattern),
         )
       : undefined,
+    tag ? carriesTag(tag) : undefined,
+  ].filter((filter) => filter !== undefined);
+
+  const rows = await db.query.recipes.findMany({
+    where: filters.length > 0 ? and(...filters) : undefined,
     with: {
       ingredients: { orderBy: [asc(ingredients.position), asc(ingredients.id)] },
+      tags: { with: { tag: true } },
     },
     orderBy: [asc(recipes.title)],
   });
+
+  return rows.map((row) => ({ ...row, tags: tagsOf(row.tags) }));
+}
+
+/**
+ * Every tag at least one recipe carries, with how many carry it. A tag no
+ * recipe carries is deleted when the last recipe lets go of it, so this needs
+ * no filter of its own.
+ */
+export async function listTags() {
+  return db
+    .select({ name: tags.name, slug: tags.slug, recipeCount: count(recipeTags.recipeId) })
+    .from(tags)
+    .innerJoin(recipeTags, eq(recipeTags.tagId, tags.id))
+    .groupBy(tags.id)
+    .orderBy(desc(count(recipeTags.recipeId)), asc(tags.slug));
+}
+
+/**
+ * The name a tag is shown under, or undefined when no recipe carries it.
+ *
+ * The join is what makes the second half true, and it is what stops the page
+ * offering to index a tag that leads to an empty list. Wrapped in `cache` for
+ * the same reason `findRecipeBySlug` is: the page and its `generateMetadata`
+ * both ask.
+ */
+export const findTagName = cache(async (slug: string) => {
+  const [row] = await db
+    .select({ name: tags.name })
+    .from(tags)
+    .innerJoin(recipeTags, eq(recipeTags.tagId, tags.id))
+    .where(eq(tags.slug, slug))
+    .limit(1);
+
+  return row?.name;
+});
+
+/**
+ * The address of every tag in use, and when a recipe carrying it last
+ * changed. The sitemap needs nothing else about a tag.
+ */
+export async function listTagAddresses() {
+  return db
+    .select({ slug: tags.slug, updatedAt: max(recipes.updatedAt) })
+    .from(tags)
+    .innerJoin(recipeTags, eq(recipeTags.tagId, tags.id))
+    .innerJoin(recipes, eq(recipes.id, recipeTags.recipeId))
+    .groupBy(tags.slug)
+    .orderBy(asc(tags.slug));
 }
 
 /**
@@ -57,12 +139,15 @@ export async function listRecipeAddresses() {
  * memo lasts one render and no longer, so a save is never served stale.
  */
 export const findRecipeBySlug = cache(async (slug: string) => {
-  return db.query.recipes.findFirst({
+  const recipe = await db.query.recipes.findFirst({
     where: eq(recipes.slug, slug),
     with: {
       ingredients: { orderBy: [asc(ingredients.position), asc(ingredients.id)] },
+      tags: { with: { tag: true } },
     },
   });
+
+  return recipe && { ...recipe, tags: tagsOf(recipe.tags) };
 });
 
 /**
@@ -82,3 +167,4 @@ export async function findCurrentSlug(slug: string) {
 }
 
 export type RecipeListItem = Awaited<ReturnType<typeof listRecipes>>[number];
+export type TagWithCount = Awaited<ReturnType<typeof listTags>>[number];

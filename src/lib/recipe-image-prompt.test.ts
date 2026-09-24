@@ -14,7 +14,6 @@ function recipe(attributes: Partial<RecipeWithIngredients> = {}): RecipeWithIngr
     description: "A weeknight dal.",
     category: "Main course",
     cuisine: "Indian",
-    keywords: "dal, lentils",
     servings: 4,
     prepTimeMinutes: 10,
     cookTimeMinutes: 25,
@@ -23,6 +22,7 @@ function recipe(attributes: Partial<RecipeWithIngredients> = {}): RecipeWithIngr
     imagePathname: null,
     createdAt: now,
     updatedAt: now,
+    tags: [],
     ingredients: [
       {
         id: 1,

@@ -36,6 +36,41 @@ describe("sitemap", () => {
     ]);
   });
 
+  it("lists every tag in use, at the address the tag page calls its canonical", async () => {
+    await createRecipe({ title: "Bread", tags: ["Weeknight", "baking"] });
+
+    expect(await addresses()).toEqual([
+      "https://recipes.example/",
+      "https://recipes.example/recipes/bread",
+      "https://recipes.example/?tag=baking",
+      "https://recipes.example/?tag=weeknight",
+    ]);
+  });
+
+  it("dates a tag from the newest recipe carrying it", async () => {
+    const older = await createRecipe({ title: "Bread", tags: ["baking"] });
+    const newer = await createRecipe({ title: "Brioche", tags: ["baking"] });
+
+    await db
+      .update(recipes)
+      .set({ updatedAt: new Date("2026-01-01T00:00:00.000Z") })
+      .where(eq(recipes.id, older.id));
+    const newest = new Date("2026-06-04T09:30:00.000Z");
+    await db.update(recipes).set({ updatedAt: newest }).where(eq(recipes.id, newer.id));
+
+    const entry = (await sitemap()).find((row) => row.url.endsWith("?tag=baking"));
+
+    expect(entry?.lastModified).toEqual(newest);
+  });
+
+  it("drops a tag once the last recipe carrying it is deleted", async () => {
+    const recipe = await createRecipe({ title: "Bread", tags: ["baking"] });
+
+    await db.delete(recipes).where(eq(recipes.id, recipe.id));
+
+    expect(await addresses()).toEqual(["https://recipes.example/"]);
+  });
+
   it("gives each recipe the date it last changed", async () => {
     const recipe = await createRecipe({ title: "Pancakes" });
     const changed = new Date("2026-06-04T09:30:00.000Z");

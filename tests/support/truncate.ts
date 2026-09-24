@@ -9,10 +9,11 @@ import { requireTestDatabase } from "./database";
 // statement that empties the tables.
 requireTestDatabase(process.env.DATABASE_URL);
 
-// Ingredients and slug history cascade from recipes, so these two clear
-// everything. Truncation is slower than rolling back a transaction, but the
-// code under test opens transactions of its own against a pooled connection,
-// so it cannot share one with the test.
+// Ingredients, slug history and the tag join rows all cascade, so these three
+// clear everything. Tags are named as well as recipes, because a tag belongs
+// to no recipe and nothing would cascade to it. Truncation is slower than
+// rolling back a transaction, but the code under test opens transactions of
+// its own against a pooled connection, so it cannot share one with the test.
 afterEach(async () => {
-  await db.execute(sql`TRUNCATE recipes, recipe_slugs RESTART IDENTITY CASCADE`);
+  await db.execute(sql`TRUNCATE recipes, recipe_slugs, tags RESTART IDENTITY CASCADE`);
 });
