@@ -30,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en-GB" className={`${body.variable} ${display.variable}`}>
       <body className="bg-paper text-ink min-h-dvh antialiased">
         <header className="border-line bg-card print-hide border-b">
-          <div className="page page--wide flex items-center justify-between gap-4 py-3">
+          <div className="page flex items-center justify-between gap-4 py-3">
             <Link
               href="/"
               className="display text-ink inline-flex min-h-11 items-center text-xl font-bold tracking-tight no-underline"

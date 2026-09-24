@@ -161,7 +161,8 @@
     max-width: var(--container-page);
   }
 
-  .page--wide {
+  .page--wide,
+  body:has(main .page--wide) > header .page {
     max-width: var(--container-wide);
   }
 
