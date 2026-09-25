@@ -28,8 +28,8 @@ export default function AiRecipePage() {
     <div className="page">
       <h1>Write a recipe with AI</h1>
       <p className="text-ink-soft mt-2">
-        Describe the recipe you want, read the draft, and ask for changes until it is right.
-        Nothing is saved until you press save.
+        Describe the recipe you want or paste one in, read the draft, and ask for changes until it
+        is right. Nothing is saved until you press save.
       </p>
 
       <div className="mt-6">

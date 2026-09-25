@@ -59,8 +59,13 @@ export type GeneratedRecipe = z.infer<typeof generatedRecipeSchema>;
 
 const SYSTEM_PROMPT = [
   "You write recipes for a home cook's own collection.",
+  "The cook either describes a dish or pastes in a recipe they already have.",
   "Give real quantities, a method that works, and nothing else: no notes, no serving suggestions, no commentary.",
   "Use metric units and British ingredient names.",
+  "When the cook pastes a recipe, keep its ingredients, quantities and method, converting only the units and names.",
+  "Leave out anything that is not the recipe, such as a story, adverts, comments or nutrition figures.",
+  "Put a tip that changes the result into the step it belongs to.",
+  "Fill in whatever the pasted recipe leaves out, such as servings, times, course, cuisine or tags, with your best estimate.",
 ].join(" ");
 
 function blankToNull(value: string) {
@@ -196,8 +201,13 @@ export function buildPrompt({
 }) {
   if (!draft || change.trim() === "") return prompt.trim();
 
+  // Tagged, because a pasted recipe runs to many lines of its own.
   return [
-    `This recipe was written for the request: ${prompt.trim()}`,
+    "This recipe was written for the request below.",
+    "",
+    "<request>",
+    prompt.trim(),
+    "</request>",
     "",
     JSON.stringify(draft, null, 2),
     "",

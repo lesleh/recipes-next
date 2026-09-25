@@ -40,8 +40,11 @@ export function resolveModel(value: unknown): RecipeModelId {
   return known ? known.id : DEFAULT_RECIPE_MODEL;
 }
 
-/** Long enough for a fussy request, short enough to cap what we pay to read. */
-export const MAX_PROMPT_LENGTH = 500;
+/**
+ * Long enough for a whole recipe pasted from a web page, story and all. At
+ * about 5,000 tokens, a full request costs about a cent to read on Claude Sonnet 5.
+ */
+export const MAX_PROMPT_LENGTH = 20000;
 
 /** A change to a draft is an instruction, not a recipe, so it is shorter. */
 export const MAX_CHANGE_LENGTH = 300;

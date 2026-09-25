@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes } from "@/db/schema";
 import { findRecipeBySlug } from "@/lib/recipes";
-import { DEFAULT_RECIPE_MODEL } from "@/lib/ai-models";
+import { DEFAULT_RECIPE_MODEL, MAX_PROMPT_LENGTH } from "@/lib/ai-models";
 import type { GeneratedRecipe } from "@/lib/recipe-writer";
 
 import { createRecipe } from "../support/factories";
@@ -112,6 +112,24 @@ describe("writeRecipe writing a draft", () => {
     expect(askModelForRecipe).toHaveBeenCalledWith(
       expect.objectContaining({ model: DEFAULT_RECIPE_MODEL }),
     );
+  });
+
+  it("takes a whole recipe pasted in", async () => {
+    const pasted = `Red lentil dal\n\n${"Rinse the lentils and simmer them. ".repeat(300)}`;
+
+    await generate({ prompt: pasted });
+
+    expect(askModelForRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({ prompt: pasted.trim() }),
+    );
+  });
+
+  it("refuses a request over the limit, says how long it was, and asks no model", async () => {
+    const state = await generate({ prompt: "x".repeat(MAX_PROMPT_LENGTH + 1) });
+
+    expect(state.error).toContain("20,001 characters");
+    expect(state.error).toContain("20,000 or fewer");
+    expect(askModelForRecipe).not.toHaveBeenCalled();
   });
 });
 

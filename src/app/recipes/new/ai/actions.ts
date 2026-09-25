@@ -57,10 +57,15 @@ export async function writeRecipe(
   const prompt = text(formData, "prompt");
   const change = intent === "change" ? text(formData, "change") : "";
 
-  if (prompt === "") return { draft, error: "Say what you would like a recipe for." };
+  if (prompt === "") return { draft, error: "Describe a recipe, or paste one in." };
 
   if (prompt.length > MAX_PROMPT_LENGTH) {
-    return { draft, error: `Ask for the recipe in ${MAX_PROMPT_LENGTH} characters or fewer.` };
+    const count = (n: number) => n.toLocaleString("en-GB");
+
+    return {
+      draft,
+      error: `The request is ${count(prompt.length)} characters. Keep it to ${count(MAX_PROMPT_LENGTH)} or fewer, such as by leaving out anything that is not the recipe.`,
+    };
   }
 
   if (intent === "change") {

@@ -335,10 +335,11 @@ stay open until then.
 
 ## Writing a recipe with AI
 
-`/recipes/new/ai` writes a recipe from a sentence, and then changes it until
-you are happy with it:
+`/recipes/new/ai` writes a recipe from a sentence or from a recipe you paste
+in, and then changes it until you are happy with it:
 
-1. Describe the dish. A model returns a whole recipe as structured JSON.
+1. Describe the dish, or paste a recipe. A model returns a whole recipe as
+   structured JSON.
 2. Read the draft on the page. Nothing has been written to the database.
 3. Say what should change, such as "make it vegan". The model writes the whole
    recipe again.
@@ -359,10 +360,19 @@ and it needs the same write password as the other write pages. The password is
 checked twice, in `src/proxy.ts` and in the server function, for the reason
 given above.
 
-The request is capped at 500 characters and a change at 300. Servings and
-dietary needs go in the request rather than in fields of their own, because a
-sentence says them better than a form does. Neither is kept once the recipe is
-saved.
+A pasted recipe keeps its own ingredients, quantities and method, converted to
+metric units and British names. The model leaves out the story, adverts and
+comments around it, and estimates whatever it lacks, such as servings, times
+or tags.
+
+The request is capped at 20,000 characters, enough for a recipe copied from a
+whole web page, and a change at 300. The request box has no `maxLength`,
+because a browser cuts a long paste short without saying so. The server
+refuses it instead, and says how long it was.
+
+Servings and dietary needs go in the request rather than in fields of their
+own, because a sentence says them better than a form does. Neither is kept once
+the recipe is saved.
 
 The draft is read-only. A typed correction belongs on the edit page, which
 opens as soon as you save.
