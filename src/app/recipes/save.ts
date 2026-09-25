@@ -1,22 +1,24 @@
 import { and, eq, ne } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { after } from "next/server";
 
 import { db } from "@/db";
 import { ingredients, recipeSlugs, recipes, type Recipe } from "@/db/schema";
 import { checkWriteAccess, WRITE_PASSWORD_MISSING } from "@/lib/auth";
 import { replaceTags } from "@/lib/recipe-tags";
-import { RESERVED_SLUGS } from "@/lib/slug";
+import { toRecipeInput, type GeneratedRecipe } from "@/lib/recipe-writer";
+import { RESERVED_SLUGS, slugify } from "@/lib/slug";
 import { removeImage, type StoredImage } from "@/lib/storage";
-import type { RecipeInput } from "@/lib/validation";
+import { recipeSchema, type RecipeInput } from "@/lib/validation";
 
 import { illustrateRecipe } from "./illustrate";
 
 /**
- * Everything both ways of making a recipe share: the password check, the slug
- * rules and the write itself. The form and the AI page differ only in where
- * the recipe came from, so neither of them owns this code.
+ * Everything the ways of making a recipe share: the password check, the slug
+ * rules and the write itself. The form and the AI pages differ only in where
+ * the recipe came from, so none of them owns this code.
  */
 
 /** The field an error belongs to, so the form can point at it. */
@@ -150,4 +152,32 @@ export async function persistRecipe({
       }
     });
   }
+}
+
+/**
+ * Store a model's draft, as a new recipe or over an existing one, and send the
+ * reader to it. The draft goes through the form's own schema first, so a model
+ * meets the same limits as a person typing. Returns why it cannot be stored.
+ */
+export async function persistDraft(draft: GeneratedRecipe, existing: Recipe | null) {
+  const parsed = recipeSchema.safeParse(toRecipeInput(draft));
+
+  if (!parsed.success) {
+    const reasons = parsed.error.issues.map((issue) => issue.message).join(". ");
+
+    return `This draft cannot be stored. ${reasons}`;
+  }
+
+  const recipe = parsed.data;
+  const slug = slugify(recipe.title);
+  const slugError = await checkSlug(slug, existing?.id ?? null);
+
+  // No numbered suffix is invented, as on the form. Say what happened, and the
+  // next change can ask for a different title.
+  if (slugError) return slugError;
+
+  // No image change, so an edit keeps its photo and its drawing.
+  await persistRecipe({ recipe, slug, existing });
+
+  redirect(`/recipes/${slug}`);
 }
