@@ -1,19 +1,14 @@
 "use server";
 
-import { redirect } from "next/navigation";
-
-import { checkSlug, persistRecipe, requireWriteAccess } from "@/app/recipes/save";
+import { persistDraft, requireWriteAccess } from "@/app/recipes/save";
 import { MAX_CHANGE_LENGTH, MAX_PROMPT_LENGTH, resolveModel } from "@/lib/ai-models";
 import {
   askModelForRecipe,
   describeFailure,
   GATEWAY_KEY_MISSING,
   generatedRecipeSchema,
-  toRecipeInput,
   type GeneratedRecipe,
 } from "@/lib/recipe-writer";
-import { slugify } from "@/lib/slug";
-import { recipeSchema } from "@/lib/validation";
 
 /**
  * The draft in hand, and what went wrong last time. Nothing is written until
@@ -99,30 +94,9 @@ export async function writeRecipe(
   }
 }
 
-/**
- * The only path that writes. The draft goes through the form's own schema
- * first, so a model meets the same limits as a person typing.
- */
+/** The only path that writes. */
 async function saveDraft(draft: GeneratedRecipe | null): Promise<AiRecipeState> {
   if (!draft) return { draft: null, error: "There is no draft to save yet." };
 
-  const parsed = recipeSchema.safeParse(toRecipeInput(draft));
-
-  if (!parsed.success) {
-    const reasons = parsed.error.issues.map((issue) => issue.message).join(". ");
-
-    return { draft, error: `This draft cannot be stored. ${reasons}` };
-  }
-
-  const recipe = parsed.data;
-  const slug = slugify(recipe.title);
-  const slugError = await checkSlug(slug, null);
-
-  // Nothing invents a numbered suffix here either. Say what happened, and the
-  // next change can ask for a different title.
-  if (slugError) return { draft, error: slugError };
-
-  await persistRecipe({ recipe, slug });
-
-  redirect(`/recipes/${slug}`);
+  return { draft, error: await persistDraft(draft, null) };
 }

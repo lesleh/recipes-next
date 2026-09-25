@@ -189,6 +189,9 @@ export default async function RecipePage({ params }: PageProps) {
         <Link href={`/recipes/${recipe.slug}/edit`} prefetch={false} className="button">
           Edit
         </Link>
+        <Link href={`/recipes/${recipe.slug}/edit/ai`} prefetch={false} className="button">
+          Edit with AI
+        </Link>
         <DeleteRecipeButton id={recipe.id} title={recipe.title} />
         <Link href="/" className="button button--quiet sm:ml-auto">
           Back to recipes

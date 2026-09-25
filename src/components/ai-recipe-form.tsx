@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { writeRecipe, type AiRecipeState } from "@/app/recipes/new/ai/actions";
 import { RecipeDraft } from "@/components/recipe-draft";
+import { Spinner } from "@/components/spinner";
 import { DEFAULT_RECIPE_MODEL, MAX_CHANGE_LENGTH, RECIPE_MODELS } from "@/lib/ai-models";
 
 type Intent = "generate" | "change" | "save";
@@ -14,15 +15,6 @@ const PENDING_LABEL: Record<Intent, string> = {
   change: "Making the change...",
   save: "Saving...",
 };
-
-function Spinner() {
-  return (
-    <span
-      aria-hidden
-      className="border-current/40 size-4 animate-spin rounded-full border-2 border-t-current motion-reduce:animate-none"
-    />
-  );
-}
 
 export function AiRecipeForm() {
   const [state, formAction, pending] = useActionState<AiRecipeState, FormData>(writeRecipe, {

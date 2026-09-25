@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { IllustrationPanel } from "@/components/illustration-panel";
 import { RecipeForm } from "@/components/recipe-form";
 import { readIllustration } from "@/lib/illustration";
@@ -24,6 +26,10 @@ export default async function EditRecipePage({ params }: PageProps) {
   return (
     <div className="page">
       <h1>Edit recipe</h1>
+      <p className="text-ink-soft mt-2">
+        Or <Link href={`/recipes/${recipe.slug}/edit/ai`}>tell AI what to change</Link>, such as
+        &ldquo;make it vegan&rdquo;, and read the result before it is saved.
+      </p>
       <div className="mt-6">
         <IllustrationPanel
           id={recipe.id}

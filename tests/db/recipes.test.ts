@@ -3,7 +3,13 @@ import { describe, expect, it } from "vitest";
 
 import { db } from "@/db";
 import { recipes } from "@/db/schema";
-import { findCurrentSlug, findRecipeBySlug, listRecipes, listTags } from "@/lib/recipes";
+import {
+  findCurrentSlug,
+  findRecipeById,
+  findRecipeBySlug,
+  listRecipes,
+  listTags,
+} from "@/lib/recipes";
 
 import { createRecipe } from "../support/factories";
 
@@ -187,6 +193,31 @@ describe("findRecipeBySlug", () => {
     await createRecipe({ title: "Sourdough", formerSlugs: ["bread"] });
 
     expect(await findRecipeBySlug("bread")).toBeUndefined();
+  });
+});
+
+describe("findRecipeById", () => {
+  it("gives the recipe with its ingredients in order and its tags", async () => {
+    const created = await createRecipe({
+      title: "Bread",
+      ingredients: [{ name: "Flour" }, { name: "Water" }],
+      tags: ["Weeknight", "apple"],
+    });
+
+    const recipe = await findRecipeById(created.id);
+
+    expect(recipe?.title).toBe("Bread");
+    expect(recipe?.ingredients.map((row) => row.name)).toEqual(["Flour", "Water"]);
+    expect(recipe?.tags.map((tag) => tag.name)).toEqual(["apple", "Weeknight"]);
+  });
+
+  it("gives nothing for an id no recipe holds", async () => {
+    expect(await findRecipeById(1)).toBeUndefined();
+  });
+
+  // A form sends text, and an empty or mangled id arrives here as NaN.
+  it("gives nothing for an id that is not a whole number", async () => {
+    expect(await findRecipeById(Number.NaN)).toBeUndefined();
   });
 });
 
