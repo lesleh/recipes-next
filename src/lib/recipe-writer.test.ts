@@ -191,7 +191,7 @@ describe("buildPrompt", () => {
       change: "make it vegan",
     });
 
-    expect(text).toContain("a weeknight dal");
+    expect(text).toContain("<request>\na weeknight dal\n</request>");
     expect(text).toContain('"title": "Red lentil dal"');
     expect(text).toContain("Change it as follows: make it vegan");
     expect(text).toContain("leave everything the change does not touch as it is");

@@ -5,12 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 
 import { writeRecipe, type AiRecipeState } from "@/app/recipes/new/ai/actions";
 import { RecipeDraft } from "@/components/recipe-draft";
-import {
-  DEFAULT_RECIPE_MODEL,
-  MAX_CHANGE_LENGTH,
-  MAX_PROMPT_LENGTH,
-  RECIPE_MODELS,
-} from "@/lib/ai-models";
+import { DEFAULT_RECIPE_MODEL, MAX_CHANGE_LENGTH, RECIPE_MODELS } from "@/lib/ai-models";
 
 type Intent = "generate" | "change" | "save";
 
@@ -80,17 +75,17 @@ export function AiRecipeForm() {
       )}
 
       <div className="field">
-        <label htmlFor="prompt">What would you like a recipe for?</label>
+        <label htmlFor="prompt">Describe a recipe, or paste one in</label>
         <p className="field__hint">
-          A sentence is enough, such as &ldquo;a quick weeknight dal for four&rdquo;. Say what you
-          want to avoid, and how long you have.
+          A sentence is enough, such as &ldquo;a quick weeknight dal for four&rdquo;. Or paste a
+          whole recipe, and anything it leaves out, such as the cooking time, is filled in.
         </p>
+        {/* No maxLength: a browser cuts a long paste short without saying so. */}
         <textarea
           id="prompt"
           name="prompt"
-          rows={3}
+          rows={6}
           required
-          maxLength={MAX_PROMPT_LENGTH}
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
         />
