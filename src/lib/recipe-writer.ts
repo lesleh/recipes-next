@@ -1,6 +1,8 @@
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
+import type { RecipeWithIngredients } from "@/db/schema";
+
 import type { RecipeModelId } from "./ai-models";
 import { parseTags } from "./tags";
 import type { RecipeInput } from "./validation";
@@ -56,6 +58,39 @@ export const generatedRecipeSchema = z.object({
 });
 
 export type GeneratedRecipe = z.infer<typeof generatedRecipeSchema>;
+
+/**
+ * A recipe in the shape the model reads and writes. A saved recipe can lack a
+ * number, which a generated one never does, so the numbers can be null here.
+ */
+export type RecipeForModel = Omit<
+  GeneratedRecipe,
+  "servings" | "prepTimeMinutes" | "cookTimeMinutes"
+> & {
+  servings: number | null;
+  prepTimeMinutes: number | null;
+  cookTimeMinutes: number | null;
+};
+
+/** A saved recipe in the model's shape, so a change can start from it. */
+export function fromSavedRecipe(recipe: RecipeWithIngredients): RecipeForModel {
+  return {
+    title: recipe.title,
+    description: recipe.description ?? "",
+    category: recipe.category ?? "",
+    cuisine: recipe.cuisine ?? "",
+    tags: recipe.tags.map((tag) => tag.name).join(", "),
+    servings: recipe.servings,
+    prepTimeMinutes: recipe.prepTimeMinutes,
+    cookTimeMinutes: recipe.cookTimeMinutes,
+    instructions: recipe.instructions ?? "",
+    ingredients: recipe.ingredients.map((ingredient) => ({
+      quantity: ingredient.quantity ?? "",
+      unit: ingredient.unit ?? "",
+      name: ingredient.name,
+    })),
+  };
+}
 
 const SYSTEM_PROMPT = [
   "You write recipes for a home cook's own collection.",
@@ -184,30 +219,36 @@ export function describeFailure(failure: unknown, task = "write a recipe") {
 
 /**
  * What to send the model: the request on its own for a first draft, or the
- * draft in hand and what to change about it.
+ * draft in hand and what to change about it. A saved recipe being changed has
+ * no request, so it goes without one.
  *
  * A change carries the whole draft rather than a conversation, so the server
  * keeps nothing between rounds and a round costs the same whether it is the
  * first or the fifth.
  */
 export function buildPrompt({
-  prompt,
+  prompt = "",
   draft = null,
   change = "",
 }: {
-  prompt: string;
-  draft?: GeneratedRecipe | null;
+  prompt?: string;
+  draft?: RecipeForModel | null;
   change?: string;
 }) {
   if (!draft || change.trim() === "") return prompt.trim();
 
-  // Tagged, because a pasted recipe runs to many lines of its own.
+  const request = prompt.trim();
+
+  // A request is tagged, because a pasted recipe runs to many lines of its own.
+  const origin = request
+    ? ["This recipe was written for the request below.", "", "<request>", request, "</request>"]
+    : [
+        "This recipe is from the cook's collection.",
+        "Where a number is null, give your best estimate.",
+      ];
+
   return [
-    "This recipe was written for the request below.",
-    "",
-    "<request>",
-    prompt.trim(),
-    "</request>",
+    ...origin,
     "",
     JSON.stringify(draft, null, 2),
     "",
@@ -217,20 +258,20 @@ export function buildPrompt({
 }
 
 /**
- * Ask a model for a recipe, or for a changed version of the draft in hand.
- * The model is a plain "creator/model-name" string, which routes through the
- * Vercel AI Gateway on `AI_GATEWAY_API_KEY`, so no provider package is
- * installed.
+ * Ask a model for a recipe, or for a changed version of the draft or saved
+ * recipe in hand. The model is a plain "creator/model-name" string, which
+ * routes through the Vercel AI Gateway on `AI_GATEWAY_API_KEY`, so no provider
+ * package is installed.
  */
 export async function askModelForRecipe({
-  prompt,
+  prompt = "",
   model,
   draft = null,
   change = "",
 }: {
-  prompt: string;
+  prompt?: string;
   model: RecipeModelId;
-  draft?: GeneratedRecipe | null;
+  draft?: RecipeForModel | null;
   change?: string;
 }) {
   const { output } = await generateText({

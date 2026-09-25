@@ -1,18 +1,31 @@
 import { ingredientAmount, instructionSteps } from "@/lib/format";
-import type { GeneratedRecipe } from "@/lib/recipe-writer";
+import type { RecipeForModel } from "@/lib/recipe-writer";
 import { parseTags } from "@/lib/tags";
 
 /**
- * A draft as it would look once saved. Read-only on purpose: a change goes
- * back to the model, and the edit page is where a typed correction belongs.
+ * A draft as it would look once saved, or a saved recipe before its first
+ * change. Read-only on purpose: a change goes back to the model, and the edit
+ * page is where a typed correction belongs.
  */
-export function RecipeDraft({ draft }: { draft: GeneratedRecipe }) {
+export function RecipeDraft({
+  draft,
+  note = "Draft. Nothing is saved until you press save.",
+}: {
+  draft: RecipeForModel;
+  note?: string;
+}) {
   const steps = instructionSteps(draft.instructions);
   const tags = parseTags([draft.tags]);
+  const hasFacts =
+    draft.prepTimeMinutes !== null ||
+    draft.cookTimeMinutes !== null ||
+    draft.servings !== null ||
+    draft.category !== "" ||
+    draft.cuisine !== "";
 
   return (
     <section aria-labelledby="draft-title" className="panel">
-      <p className="field__hint">Draft. Nothing is saved until you press save.</p>
+      <p className="field__hint">{note}</p>
 
       <h2 id="draft-title" className="mt-1">
         {draft.title}
@@ -20,30 +33,38 @@ export function RecipeDraft({ draft }: { draft: GeneratedRecipe }) {
 
       {draft.description && <p className="text-ink-soft mt-2 max-w-[58ch]">{draft.description}</p>}
 
-      <p className="meta border-line mt-4 border-y py-3">
-        <span>
-          Prep <strong>{draft.prepTimeMinutes}</strong> min
-        </span>
-        <span>
-          Cook <strong>{draft.cookTimeMinutes}</strong> min
-        </span>
-        <span>
-          Serves <strong>{draft.servings}</strong>
-        </span>
-        {draft.category && (
-          <span>
-            Category <strong>{draft.category}</strong>
-          </span>
-        )}
-        {draft.cuisine && (
-          <span>
-            Cuisine <strong>{draft.cuisine}</strong>
-          </span>
-        )}
-      </p>
+      {hasFacts && (
+        <p className="meta border-line mt-4 border-y py-3">
+          {draft.prepTimeMinutes !== null && (
+            <span>
+              Prep <strong>{draft.prepTimeMinutes}</strong> min
+            </span>
+          )}
+          {draft.cookTimeMinutes !== null && (
+            <span>
+              Cook <strong>{draft.cookTimeMinutes}</strong> min
+            </span>
+          )}
+          {draft.servings !== null && (
+            <span>
+              Serves <strong>{draft.servings}</strong>
+            </span>
+          )}
+          {draft.category && (
+            <span>
+              Category <strong>{draft.category}</strong>
+            </span>
+          )}
+          {draft.cuisine && (
+            <span>
+              Cuisine <strong>{draft.cuisine}</strong>
+            </span>
+          )}
+        </p>
+      )}
 
-      {/* Plain pills rather than links: nothing is saved yet, so there is
-          nothing to filter the list by. */}
+      {/* Plain pills rather than links: a link would leave the page, and the
+          draft with it. */}
       {tags.length > 0 && (
         <ul aria-label="Tags" className="tag-list mt-4">
           {tags.map((tag) => (

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import type { RecipeWithIngredients } from "@/db/schema";
+
 import {
   buildPrompt,
   describeFailure,
+  fromSavedRecipe,
   generatedRecipeSchema,
   toRecipeInput,
   type GeneratedRecipe,
@@ -195,5 +198,117 @@ describe("buildPrompt", () => {
     expect(text).toContain('"title": "Red lentil dal"');
     expect(text).toContain("Change it as follows: make it vegan");
     expect(text).toContain("leave everything the change does not touch as it is");
+  });
+
+  it("carries a saved recipe and the change, with no request", () => {
+    const text = buildPrompt({ draft: generated, change: "make it vegan" });
+
+    expect(text).toContain("from the cook's collection");
+    expect(text).not.toContain("<request>");
+    expect(text).toContain('"title": "Red lentil dal"');
+    expect(text).toContain("Change it as follows: make it vegan");
+  });
+
+  it("asks for an estimate where a saved recipe lacks a number", () => {
+    const text = buildPrompt({ draft: { ...generated, servings: null }, change: "less salt" });
+
+    expect(text).toContain('"servings": null');
+    expect(text).toContain("Where a number is null, give your best estimate.");
+  });
+});
+
+/** A saved recipe as the database gives it, with only what the model reads. */
+function savedRecipe(attributes: Partial<RecipeWithIngredients> = {}): RecipeWithIngredients {
+  const now = new Date();
+
+  return {
+    id: 1,
+    title: "Red lentil dal",
+    slug: "red-lentil-dal",
+    description: "A weeknight dal.",
+    category: "Main course",
+    cuisine: "Indian",
+    servings: 4,
+    prepTimeMinutes: 10,
+    cookTimeMinutes: 25,
+    instructions: "Rinse the lentils.\nSimmer for 20 minutes.",
+    imageUrl: null,
+    imagePathname: null,
+    illustration: null,
+    illustratedAt: null,
+    createdAt: now,
+    updatedAt: now,
+    ingredients: [
+      {
+        id: 1,
+        recipeId: 1,
+        name: "Red lentils",
+        quantity: "200",
+        unit: "g",
+        position: 1,
+        createdAt: now,
+        updatedAt: now,
+      },
+      {
+        id: 2,
+        recipeId: 1,
+        name: "Salt",
+        quantity: null,
+        unit: null,
+        position: 2,
+        createdAt: now,
+        updatedAt: now,
+      },
+    ],
+    tags: [
+      { id: 1, name: "dal", slug: "dal", createdAt: now },
+      { id: 2, name: "weeknight", slug: "weeknight", createdAt: now },
+    ],
+    ...attributes,
+  };
+}
+
+describe("fromSavedRecipe", () => {
+  it("gives the saved recipe in the model's shape", () => {
+    expect(fromSavedRecipe(savedRecipe())).toEqual({
+      title: "Red lentil dal",
+      description: "A weeknight dal.",
+      category: "Main course",
+      cuisine: "Indian",
+      tags: "dal, weeknight",
+      servings: 4,
+      prepTimeMinutes: 10,
+      cookTimeMinutes: 25,
+      instructions: "Rinse the lentils.\nSimmer for 20 minutes.",
+      ingredients: [
+        { quantity: "200", unit: "g", name: "Red lentils" },
+        { quantity: "", unit: "", name: "Salt" },
+      ],
+    });
+  });
+
+  it("gives an empty string for a missing text, and keeps a missing number as null", () => {
+    const recipe = fromSavedRecipe(
+      savedRecipe({ description: null, cuisine: null, instructions: null, servings: null }),
+    );
+
+    expect(recipe).toMatchObject({
+      description: "",
+      cuisine: "",
+      instructions: "",
+      servings: null,
+    });
+  });
+
+  it("comes back unchanged through the save path when nothing is missing", () => {
+    const saved = savedRecipe();
+    const recipe = toRecipeInput(generatedRecipeSchema.parse(fromSavedRecipe(saved)));
+
+    expect(recipe.tags).toEqual(["dal", "weeknight"]);
+    expect(recipe.ingredients).toEqual([
+      { name: "Red lentils", quantity: "200", unit: "g" },
+      { name: "Salt", quantity: null, unit: null },
+    ]);
+    expect(recipe.instructions).toBe(saved.instructions);
   });
 });

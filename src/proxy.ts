@@ -28,9 +28,9 @@ export function proxy(request: NextRequest) {
 }
 
 // Only the write pages. A matcher path does not cover the paths below it, so
-// the AI page is named as well as the form it sits under. The delete action
+// each AI page is named as well as the form it sits under. The delete action
 // posts to the recipe page, which has to stay readable, so that check lives in
 // the action itself.
 export const config = {
-  matcher: ["/recipes/new", "/recipes/new/ai", "/recipes/:slug/edit"],
+  matcher: ["/recipes/new", "/recipes/new/ai", "/recipes/:slug/edit", "/recipes/:slug/edit/ai"],
 };

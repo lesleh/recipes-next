@@ -133,6 +133,12 @@ export async function listRecipeAddresses() {
     .orderBy(asc(recipes.slug));
 }
 
+/** What a recipe page needs beyond the row: its ingredients in order, and its tags. */
+const wholeRecipe = {
+  ingredients: { orderBy: [asc(ingredients.position), asc(ingredients.id)] },
+  tags: { with: { tag: true as const } },
+};
+
 /**
  * Wrapped in `cache` because a page and its `generateMetadata` both need the
  * recipe, and each render would otherwise ask the database for it twice. The
@@ -141,14 +147,26 @@ export async function listRecipeAddresses() {
 export const findRecipeBySlug = cache(async (slug: string) => {
   const recipe = await db.query.recipes.findFirst({
     where: eq(recipes.slug, slug),
-    with: {
-      ingredients: { orderBy: [asc(ingredients.position), asc(ingredients.id)] },
-      tags: { with: { tag: true } },
-    },
+    with: wholeRecipe,
   });
 
   return recipe && { ...recipe, tags: tagsOf(recipe.tags) };
 });
+
+/**
+ * A recipe by its id, for an action that has only the id a form sent. Returns
+ * undefined when there is no such recipe.
+ */
+export async function findRecipeById(id: number) {
+  if (!Number.isInteger(id)) return undefined;
+
+  const recipe = await db.query.recipes.findFirst({
+    where: eq(recipes.id, id),
+    with: wholeRecipe,
+  });
+
+  return recipe && { ...recipe, tags: tagsOf(recipe.tags) };
+}
 
 /**
  * The slug a recipe answers at now, given any slug it has ever held. Returns

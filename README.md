@@ -311,9 +311,10 @@ which Vercel does.
 
 The password is checked in two places:
 
-- `src/proxy.ts`, for `/recipes/new` and `/recipes/<slug>/edit`, which returns
-  the 401 that makes the browser prompt
-- `saveRecipe` and `deleteRecipe` in `src/app/recipes/actions.ts`
+- `src/proxy.ts`, for `/recipes/new`, `/recipes/<slug>/edit` and the AI page
+  under each, which returns the 401 that makes the browser prompt
+- every server function that writes or asks a model, through
+  `requireWriteAccess` in `src/app/recipes/save.ts`
 
 Both are needed. A server function is a POST to the page that holds it, and the
 delete button sits on the public recipe page, so no path matcher can cover it.
@@ -380,6 +381,27 @@ opens as soon as you save.
 Photos are not generated. A new recipe has none until you upload one, as
 described in 'Recipe photos' below.
 
+### Changing a saved recipe
+
+`/recipes/<slug>/edit/ai` runs the same loop on a recipe that is already
+saved. The recipe page links to it as "Edit with AI", and so does the edit
+page.
+
+1. The page shows the recipe as saved.
+2. Say what should change. The first change starts from the saved recipe,
+   read from the database rather than from the page. Each change after that
+   starts from the draft in hand.
+3. Press save to write the draft over the recipe, or discard to go back to the
+   recipe as saved.
+
+Saving keeps the photo and the illustration and draws nothing, as an edit by
+hand does. A new title moves the recipe to a new address, and the old one
+redirects.
+
+A saved recipe can lack servings or a time, which a generated one never does.
+The model is asked to estimate any missing number, so the first change can fill
+one in even when the instruction did not mention it.
+
 ### The models
 
 `src/lib/ai-models.ts` holds the list the page offers, cheapest first, with the
@@ -405,8 +427,8 @@ the budget stops a loop.
 
 ### The key
 
-The gateway reads `AI_GATEWAY_API_KEY`. Without it, the page says it is not set
-up and links to the form, and the rest of the site is unaffected.
+The gateway reads `AI_GATEWAY_API_KEY`. Without it, each AI page says it is not
+set up and links to the form, and the rest of the site is unaffected.
 
 A valid key is not always enough. The gateway's free tier covers a subset of
 the catalogue, so a model outside it is refused with "Free tier users do not
@@ -415,7 +437,8 @@ credits moves the team to the paid tier and does not need a Pro plan. The page
 repeats whatever the gateway said, so a refusal reads as itself rather than as
 a generic failure. A production
 build is not held to it, unlike `RECIPES_WRITE_PASSWORD`, because a missing
-write password breaks every write page and a missing gateway key breaks one.
+write password breaks every write page and a missing gateway key breaks only
+the AI pages.
 
 ### The two schemas
 
